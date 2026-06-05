@@ -2,38 +2,20 @@
    Widgets auto-fit a dense responsive grid, can be added/removed via the
    library, and dragged to reorder. */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Wallet, CreditCard, TrendUp, ChartPieSlice, ChartBar, ListBullets, Receipt, Target,
+  Gauge, Lightning, Plus, SlidersHorizontal, X, DotsSixVertical, CaretUp, CaretDown,
+  ArrowRight, PaperPlaneTilt, HandCoins, ArrowDownLeft, ArrowUpRight, ArrowsLeftRight, Note,
+} from '@phosphor-icons/react';
 
 // ---------- tiny icon helper ----------
-const Ico = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const Ico = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const ICONS = {
-  wallet:  ['M2.5 7.5A2.5 2.5 0 0 1 5 5h13a1.5 1.5 0 0 1 1.5 1.5v0H5a2.5 2.5 0 0 0 0 0', 'M2.5 7.5v9A2.5 2.5 0 0 0 5 19h14a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 19 9H5a2.5 2.5 0 0 1-2.5-1.5', 'M16.5 13.5h.01'],
-  card:    ['M2.5 6.5h19v11h-19z', 'M2.5 10.5h19', 'M6 14.5h4'],
-  trend:   ['M3 17l5-5 3 3 7-7', 'M15 8h5v5'],
-  pie:     ['M12 3a9 9 0 1 0 9 9h-9V3Z', 'M14 3.2A9 9 0 0 1 20.8 10H14V3.2Z'],
-  bars:    ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
-  list:    ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3.5 6h.01', 'M3.5 12h.01', 'M3.5 18h.01'],
-  bill:    ['M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2V3Z', 'M9 8h6', 'M9 12h6'],
-  target:  ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 12h.01'],
-  gauge:   ['M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M5 19a9 9 0 1 1 14 0'],
-  bolt:    ['M13 2 4 14h7l-1 8 9-12h-7l1-8Z'],
-  plus:    ['M12 5v14', 'M5 12h14'],
-  sliders: ['M3 6h11', 'M18 6h3', 'M16 4.2v3.6', 'M3 12h5', 'M12 12h9', 'M10 10.2v3.6', 'M3 18h11', 'M18 18h3', 'M16 16.2v3.6'],
-  x:       ['M6 6l12 12', 'M18 6 6 18'],
-  grip:    ['M9 5h.01', 'M9 12h.01', 'M9 19h.01', 'M15 5h.01', 'M15 12h.01', 'M15 19h.01'],
-  up:      ['M7 14l5-5 5 5'],
-  down:    ['M7 10l5 5 5-5'],
-  arrow:   ['M5 12h14', 'M13 6l6 6-6 6'],
-  send:    ['M22 2 11 13', 'M22 2l-7 20-4-9-9-4 20-7Z'],
-  request: ['M12 5v14', 'M5 12h14', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z'],
-  income:  ['M7 7v10h10', 'M7 17 17 7'],
-  expense: ['M17 7 7 17', 'M15 17H7V9'],
-  transfer:['M7 7h13', 'm17 4 3 3-3 3', 'M17 17H4', 'm7 14-3 3 3 3'],
-  note:    ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],
+  wallet: Wallet, card: CreditCard, trend: TrendUp, pie: ChartPieSlice, bars: ChartBar,
+  list: ListBullets, bill: Receipt, target: Target, gauge: Gauge, bolt: Lightning,
+  plus: Plus, sliders: SlidersHorizontal, x: X, grip: DotsSixVertical, up: CaretUp,
+  down: CaretDown, arrow: ArrowRight, send: PaperPlaneTilt, request: HandCoins,
+  income: ArrowDownLeft, expense: ArrowUpRight, transfer: ArrowsLeftRight, note: Note,
 };
 const WIcon = ({ k }) => <Ico d={ICONS[k] || ICONS.wallet} />;
 

@@ -4,12 +4,9 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { apiPost } from '../lib/api.js';
+import { Scales, Eye } from '@phosphor-icons/react';
 
-const Logo = ({ stroke = '#fff' }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3v18" /><path d="M5 8h9a3 3 0 0 1 0 6H5" /><path d="M5 14h11" />
-  </svg>
-);
+const Logo = ({ stroke = '#fff' }) => <Scales color={stroke} weight="bold" />;
 
 export default function Auth() {
   const { status, login, signup, setup } = useAuth();
@@ -147,9 +144,7 @@ export default function Auth() {
                     autoComplete={newPassword ? 'new-password' : 'current-password'}
                     value={password} onChange={(e) => setPassword(e.target.value)} required minLength={newPassword ? 8 : undefined} />
                   <button type="button" className="toggle-pw" aria-label="Show password" onClick={() => setShowPw((v) => !v)} style={showPw ? { color: 'var(--primary-ink)' } : undefined}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Eye />
                   </button>
                 </div>
               </div>

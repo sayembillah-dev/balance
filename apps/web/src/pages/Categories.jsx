@@ -2,24 +2,12 @@
    Income/Expense types, categories with sub-categories. Create / edit / delete
    categories & subs; hide subs (eye) so they drop out of the transaction modal. */
 import React, { useState, useEffect } from 'react';
+import { PencilSimple, Trash, Plus, Eye, EyeSlash, Check, CaretRight, X, ArrowDownLeft, ArrowUpRight } from '@phosphor-icons/react';
 
-const CIco = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const CIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const CI = {
-  edit:   ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  trash:  ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  plus:   ['M12 5v14', 'M5 12h14'],
-  eye:    ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'],
-  eyeoff: ['m3 3 18 18', 'M10.6 10.7a3 3 0 0 0 4.1 4.1', 'M9.4 5.2A9.4 9.4 0 0 1 12 5c6.4 0 10 7 10 7a16.3 16.3 0 0 1-2.9 3.8', 'M6.2 6.3A16.1 16.1 0 0 0 2 12s3.6 7 10 7a9.3 9.3 0 0 0 3.4-.6'],
-  check:  ['M5 12.5 10 17l9-10'],
-  go:     ['M9 6l6 6-6 6'],
-  x:      ['M6 6l12 12', 'M18 6 6 18'],
-  inc:    ['M7 17 17 7', 'M9 7h8v8'],
-  exp:    ['M17 7 7 17', 'M15 17H7V9'],
+  edit: PencilSimple, trash: Trash, plus: Plus, eye: Eye, eyeoff: EyeSlash,
+  check: Check, go: CaretRight, x: X, inc: ArrowDownLeft, exp: ArrowUpRight,
 };
 const COLORS = ['#e0892f', '#3aa3a3', '#7c4dd8', '#2f6fe0', '#d6457a', '#c0606a', '#16a34a', '#138a72', '#0e7490', '#64748b', '#b45309', '#9333ea'];
 

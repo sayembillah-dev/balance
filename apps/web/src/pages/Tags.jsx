@@ -3,26 +3,13 @@
    open a tag to see its transactions + totals. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
+import { Plus, ArrowLeft, X, DotsThreeVertical, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
 
-const GIco = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const GIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const GI = {
-  plus:   ['M12 5v14', 'M5 12h14'],
-  back:   ['M15 6l-6 6 6 6'],
-  x:      ['M6 6l12 12', 'M18 6 6 18'],
-  kebab:  ['M12 5.5h.01', 'M12 12h.01', 'M12 18.5h.01'],
-  edit:   ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  trash:  ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  search: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z', 'm21 21-4.3-4.3'],
-  arrow:  ['M12 5v14', 'm6 11 6 6 6-6'],
-  prev:   ['M15 6l-6 6 6 6'], next: ['M9 6l6 6-6 6'],
-  in:     ['M7 7v10h10', 'M7 17 17 7'],
-  out:    ['M17 17V7H7', 'M17 7 7 17'],
-  list:   ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3.5 6h.01', 'M3.5 12h.01', 'M3.5 18h.01'],
+  plus: Plus, back: ArrowLeft, x: X, kebab: DotsThreeVertical, edit: PencilSimple,
+  trash: Trash, search: MagnifyingGlass, arrow: ArrowDown, prev: CaretLeft, next: CaretRight,
+  in: ArrowDownLeft, out: ArrowUpRight, list: ListBullets,
 };
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#0e7490', '#c0606a', '#16a34a', '#b45309', '#9333ea', '#0d9488', '#64748b'];
 

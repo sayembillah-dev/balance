@@ -2,28 +2,13 @@
    A savings pool funds virtual goal envelopes.
    Unallocated = pool − Σ goal.saved. Create/edit goals, adjust pool, quick-allocate. */
 import React, { useState, useEffect, useRef } from 'react';
+import { Plus, X, DotsThreeVertical, PencilSimple, Trash, Stack, HandCoins, Sparkle, CalendarBlank, Gauge, TrendUp, Check, Warning, Target } from '@phosphor-icons/react';
 
-const S = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const S = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const SI = {
-  plus:   ['M12 5v14', 'M5 12h14'],
-  x:      ['M6 6l12 12', 'M18 6 6 18'],
-  kebab:  ['M12 5.5h.01', 'M12 12h.01', 'M12 18.5h.01'],
-  edit:   ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  trash:  ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  pool:   ['M3 7a2 2 0 0 1 2-2h12a1.5 1.5 0 0 1 1.5 1.5V7', 'M3 7v10a2 2 0 0 0 2 2h13a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 18 8.5H5a2 2 0 0 1-2-1.5', 'M16.5 13h.01'],
-  alloc:  ['M12 3v18', 'M5 8h9a3 3 0 0 1 0 6H5', 'M5 14h11'],
-  spark:  ['M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z'],
-  cal:    ['M7 3v3', 'M17 3v3', 'M4 8.5h16', 'M5 5.5h14a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z'],
-  gauge:  ['M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M5 19a9 9 0 1 1 14 0'],
-  up:     ['M7 17 17 7', 'M9 7h8v8'],
-  check:  ['M5 12.5 10 17l9-10'],
-  warn:   ['M12 9v4', 'M12 17h.01', 'M10.3 4 3.5 16a2 2 0 0 0 1.7 3h13.6a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0Z'],
-  target: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 12h.01'],
+  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  pool: Stack, alloc: HandCoins, spark: Sparkle, cal: CalendarBlank, gauge: Gauge,
+  up: TrendUp, check: Check, warn: Warning, target: Target,
 };
 const STORE = 'balance.savings.v1';
 const NOW = new Date('2025-06-30T00:00:00');

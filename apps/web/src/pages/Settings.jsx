@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiUpload, apiObjectUrl, apiPost, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
+import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug } from '@phosphor-icons/react';
 
 // Full IANA timezone list (every zone the runtime knows), each labelled with its
 // current UTC offset. Falls back to a short list on older engines.
@@ -24,20 +25,10 @@ const BROWSER_TZ = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
 })();
 
-const G = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const G = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const GI = {
-  check: ['M5 12.5 10 17l9-10'],
-  key: ['M14 7a4 4 0 1 0-3.5 6.9L9 15.5 7.5 17 6 18.5l1.5 1.5', 'M14 7a4 4 0 0 1 .5 8'],
-  shield: ['M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'],
-  download: ['M12 3v12', 'm7 11 5 5 5-5', 'M5 21h14'],
-  user: ['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M5 20a7 7 0 0 1 14 0'],
-  sliders: ['M3 6h11', 'M18 6h3', 'M16 4.2v3.6', 'M3 12h5', 'M12 12h9', 'M10 10.2v3.6', 'M3 18h11', 'M18 18h3', 'M16 16.2v3.6'],
-  plug: ['M9 3v5', 'M15 3v5', 'M7 8h10v3a5 5 0 0 1-10 0V8Z', 'M12 16v5'],
+  check: Check, key: Key, shield: ShieldCheck, download: DownloadSimple,
+  user: User, sliders: SlidersHorizontal, plug: Plug,
 };
 const STORE = 'balance.settings.v1';
 

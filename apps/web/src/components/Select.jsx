@@ -12,12 +12,9 @@
              placeholder="Choose…" className="…" ariaLabel="…" /> */
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { CaretDown } from '@phosphor-icons/react';
 
-const Caret = () => (
-  <svg className="sel-caret" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
-    <path fill="currentColor" d="M0 0h10L5 6z" />
-  </svg>
-);
+const Caret = () => <CaretDown className="sel-caret" weight="bold" aria-hidden="true" />;
 
 const MENU_MAX_H = 264;
 

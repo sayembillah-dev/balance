@@ -693,8 +693,8 @@ html, body, #root {
 .txn-table th.sortable:hover { color: var(--ink-2); }
 .th-in { display: inline-flex; align-items: center; gap: 5px; }
 .th-in svg { width: 13px; height: 13px; }
-.th-in .arr { opacity: 0; transition: opacity 0.12s ease; }
-th.sorted .th-in .arr { opacity: 1; color: var(--primary-ink); }
+.th-in .arr { display: none; }
+th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--primary-ink); }
 .txn-table td { padding: 11px 16px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; color: var(--ink); vertical-align: middle; white-space: nowrap; }
 .txn-table tbody tr:last-child td { border-bottom: none; }
 .txn-table tbody tr:hover { background: var(--bg); }
@@ -710,6 +710,9 @@ th.sorted .th-in .arr { opacity: 1; color: var(--primary-ink); }
 .tx-amt.income { color: #15803d; }
 .tx-amt.expense { color: var(--ink); }
 .col-r { text-align: right; }
+/* Right-aligned header must out-specify `.txn-table th { text-align:left }` so
+   the header sits over its right-aligned values (e.g. the Amount column). */
+.txn-table th.col-r { text-align: right; }
 
 .tx-actions { position: relative; width: 1%; }
 .kebab { width: 30px; height: 30px; border: none; background: none; border-radius: 7px; color: var(--ink-3); cursor: pointer; display: inline-grid; place-items: center; }

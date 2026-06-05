@@ -1,21 +1,11 @@
 /* Balance — Notes. Create / edit / delete simple notes or to-do lists. */
 import React, { useState, useEffect, useRef } from 'react';
+import { Plus, X, DotsThreeVertical, PencilSimple, Trash, Check, Note, ListChecks } from '@phosphor-icons/react';
 
-const NIco = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const NIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const NI = {
-  plus:   ['M12 5v14', 'M5 12h14'],
-  x:      ['M6 6l12 12', 'M18 6 6 18'],
-  kebab:  ['M12 5.5h.01', 'M12 12h.01', 'M12 18.5h.01'],
-  edit:   ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  trash:  ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  check:  ['M5 12.5 10 17l9-10'],
-  note:   ['M5 4h11l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4Z', 'M15 4v4h4', 'M8.5 12h7', 'M8.5 16h5'],
-  todo:   ['M9 11l2 2 4-4', 'M4 5h4', 'M4 12h2', 'M4 19h4', 'M11 5h9', 'M19 12h-7', 'M11 19h9'],
+  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  check: Check, note: Note, todo: ListChecks,
 };
 const STORE = 'balance.notes.v1';
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#0e7490'];

@@ -3,23 +3,12 @@
    grounded in the user's real data (window.BAL) via window.claude.complete,
    and can suggest actions that trigger existing app flows. */
 import React, { useState, useEffect, useRef } from 'react';
+import { Sparkle, X, PaperPlaneTilt, ChartLineUp, MagnifyingGlass, Target, Bell, Plus, ArrowRight } from '@phosphor-icons/react';
 
-const A = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const A = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const AI = {
-  spark:  ['M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z'],
-  x:      ['M6 6l12 12', 'M18 6 6 18'],
-  send:   ['M22 2 11 13', 'M22 2l-7 20-4-9-9-4 20-7Z'],
-  chart:  ['M3 17l5-5 3 3 7-7', 'M15 8h5v5'],
-  search: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z', 'm21 21-4.3-4.3'],
-  target: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 12h.01'],
-  bell:   ['M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', 'M10.3 21a1.94 1.94 0 0 0 3.4 0'],
-  plus:   ['M12 5v14', 'M5 12h14'],
-  arrow:  ['M5 12h14', 'm13 6 6 6-6 6'],
+  spark: Sparkle, x: X, send: PaperPlaneTilt, chart: ChartLineUp, search: MagnifyingGlass,
+  target: Target, bell: Bell, plus: Plus, arrow: ArrowRight,
 };
 
 const inr = (n) => window.BAL.fmt(n);

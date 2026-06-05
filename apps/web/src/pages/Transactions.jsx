@@ -3,26 +3,13 @@
    Responsive: table on wide containers, card list on narrow (mobile/tablet). */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
+import { MagnifyingGlass, Plus, X, ArrowDown, DotsThreeVertical, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
 
-const TIco = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const TIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const TI = {
-  search:   ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z', 'm21 21-4.3-4.3'],
-  plus:     ['M12 5v14', 'M5 12h14'],
-  x:        ['M6 6l12 12', 'M18 6 6 18'],
-  arrow:    ['M12 5v14', 'm6 11 6 6 6-6'],
-  kebab:    ['M12 5.5h.01', 'M12 12h.01', 'M12 18.5h.01'],
-  edit:     ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  copy:     ['M9 9h10v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1Z', 'M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1'],
-  bookmark: ['M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z'],
-  trash:    ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  prev:     ['M15 6l-6 6 6 6'],
-  next:     ['M9 6l6 6-6 6'],
-  filter:   ['M3 5h18', 'M6 12h12', 'M10 19h4'],
+  search: MagnifyingGlass, plus: Plus, x: X, arrow: ArrowDown, kebab: DotsThreeVertical,
+  edit: PencilSimple, copy: Copy, bookmark: BookmarkSimple, trash: Trash,
+  prev: CaretLeft, next: CaretRight, filter: FunnelSimple,
 };
 
 const catColor = (n) => window.BAL.catColor(n);

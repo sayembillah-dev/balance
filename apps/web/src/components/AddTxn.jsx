@@ -4,24 +4,12 @@
 import React, { useState, useEffect } from 'react';
 import { apiUpload } from '../lib/api.js';
 import Select from './Select.jsx';
+import { X as XIcon, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Cards, ArrowRight, Plus, PencilSimple, Trash, Play } from '@phosphor-icons/react';
 
-const X = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const X = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const IX = {
-  x:        ['M6 6l12 12', 'M18 6 6 18'],
-  exp:      ['M17 7 7 17', 'M15 17H7V9'],
-  inc:      ['M7 7v10h10', 'M7 17 17 7'],
-  transfer: ['M7 7h13', 'm17 4 3 3-3 3', 'M17 17H4', 'm7 14-3 3 3 3'],
-  preset:   ['M5 4h14a1 1 0 0 1 1 1v3H4V5a1 1 0 0 1 1-1Z', 'M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8Z', 'M9 12h6'],
-  arrow:    ['M5 12h14', 'm13 6 6 6-6 6'],
-  plus:     ['M12 5v14', 'M5 12h14'],
-  edit:     ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
-  trash:    ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
-  apply:    ['M7 5v14l11-7-11-7Z'],
+  x: XIcon, exp: ArrowUpRight, inc: ArrowDownLeft, transfer: ArrowsLeftRight, preset: Cards,
+  arrow: ArrowRight, plus: Plus, edit: PencilSimple, trash: Trash, apply: Play,
 };
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;

@@ -4,17 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
+import { Users, Envelope, SlidersHorizontal } from '@phosphor-icons/react';
 
-const G = ({ d, fill }) => (
-  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
-       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {d.map((p, i) => <path key={i} d={p} />)}
-  </svg>
-);
+const G = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const GI = {
-  users: ['M9 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z', 'M3 20a6 6 0 0 1 12 0', 'M16 5.5a3.5 3.5 0 0 1 0 7', 'M17 14.5a6 6 0 0 1 4 5.5'],
-  mail: ['M3 6h18v12H3z', 'm3 7 9 6 9-6'],
-  sliders: ['M3 6h11', 'M18 6h3', 'M16 4.2v3.6', 'M3 12h5', 'M12 12h9', 'M10 10.2v3.6', 'M3 18h11', 'M18 18h3', 'M16 16.2v3.6'],
+  users: Users, mail: Envelope, sliders: SlidersHorizontal,
 };
 const TABS = [
   { id: 'users', icon: GI.users, label: 'Users' },

@@ -191,7 +191,7 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct
 let MASK = false;
 const inr = (n) => (MASK ? '••••' : window.BAL.fmt(n));
 const ym = (d) => (d || '').slice(0, 7);
-const fmtShort = (d) => { const x = new Date(d); return isNaN(x) ? '' : `${x.getDate()} ${MON[x.getMonth()]}`; };
+const fmtShort = (d) => window.BAL.fmtDate(d, { short: true });
 
 function Empty({ msg }) {
   return <div className="wg-body"><div style={{ opacity: 0.55, fontSize: 14, padding: '10px 2px' }}>{msg}</div></div>;

@@ -26,13 +26,11 @@ const TI = {
 };
 
 const catColor = (n) => window.BAL.catColor(n);
-const MODES = ['UPI', 'Card', 'Bank', 'Cash'];
 // Live lookup (not captured at module load — caches fill after login/hydrate).
 const ACCT_NAME = (id) => (window.BAL.loadAccounts().find((a) => a.id === id) || {}).name || '—';
 const tagById = (id) => window.BAL.loadTags().find((t) => t.id === id);
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const fmtDate = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const fmtAmt = (n) => n.toLocaleString('en-IN');
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const ink = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
@@ -68,7 +66,6 @@ function Transactions() {
   const [query, setQuery] = useState('');
   const [type, setType] = useState('all');
   const [cat, setCat] = useState('all');
-  const [mode, setMode] = useState('all');
   const [sort, setSort] = useState({ key: 'date', dir: 'desc' });
   const [page, setPage] = useState(1);
   const [menuId, setMenuId] = useState(null);
@@ -103,8 +100,7 @@ function Transactions() {
     let r = txns.filter((t) =>
       (type === 'all' || t.type === type) &&
       (cat === 'all' || t.category === cat) &&
-      (mode === 'all' || t.mode === mode) &&
-      (!q || t.merchant.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || t.mode.toLowerCase().includes(q))
+      (!q || t.merchant.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))
     );
     r = [...r].sort((a, b) => {
       let d = sort.key === 'amount' ? a.amount - b.amount : a.date.localeCompare(b.date);
@@ -112,12 +108,12 @@ function Transactions() {
       return sort.dir === 'asc' ? d : -d;
     });
     return r;
-  }, [txns, query, type, cat, mode, sort]);
+  }, [txns, query, type, cat, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const cur = Math.min(page, pages);
   useEffect(() => { if (page > pages) setPage(pages); }, [pages, page]);
-  useEffect(() => { setPage(1); }, [query, type, cat, mode, sort]);
+  useEffect(() => { setPage(1); }, [query, type, cat, sort]);
   const slice = filtered.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
   const from = filtered.length === 0 ? 0 : (cur - 1) * PAGE_SIZE + 1;
   const to = Math.min(cur * PAGE_SIZE, filtered.length);
@@ -180,7 +176,7 @@ function Transactions() {
       <div className="txn-toolbar">
         <div className="txn-search">
           <TIco d={TI.search} />
-          <input value={query} placeholder="Search description, category, mode…" onChange={(e) => setQuery(e.target.value)} />
+          <input value={query} placeholder="Search description, category…" onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="txn-seg">
           {[['all', 'All'], ['expense', 'Expense'], ['income', 'Income']].map(([v, l]) => (
@@ -189,8 +185,6 @@ function Transactions() {
         </div>
         <Select value={cat} onChange={(v) => setCat(v)} ariaLabel="Filter by category"
           options={[{ value: 'all', label: 'All categories' }, ...window.BAL.catNames().map((c) => ({ value: c, label: c }))]} />
-        <Select value={mode} onChange={(v) => setMode(v)} ariaLabel="Filter by mode"
-          options={[{ value: 'all', label: 'All modes' }, ...MODES.map((m) => ({ value: m, label: m }))]} />
       </div>
 
       {slice.length === 0 ? (
@@ -202,7 +196,7 @@ function Transactions() {
               <Avatar name={t.merchant} category={t.category} />
               <div className="tx-mid">
                 <b>{t.merchant}</b>
-                <div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category} · {t.mode}</div>
+                <div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category}</div>
               </div>
               <div className="tx-right">
                 <span className={`tx-amt ${t.type}`}>{sign(t)}{window.BAL.fmt(t.amount)}</span>
@@ -220,7 +214,6 @@ function Transactions() {
                 <tr>
                   <th>Description</th>
                   <th>Category</th>
-                  <th>Mode</th>
                   <SortHead k="date" label="Date" />
                   <SortHead k="amount" label="Amount" right />
                   <th></th>
@@ -242,7 +235,6 @@ function Transactions() {
                       </div>
                     </td>
                     <td><span className="cat-pill"><i style={{ background: catColor(t.category) }} />{t.category}</span></td>
-                    <td><span className="mode-tag">{t.mode}</span></td>
                     <td><span className="tx-date">{fmtDate(t.date)}</span></td>
                     <td className={`tx-amt ${t.type}`}>{sign(t)}{window.BAL.fmt(t.amount)}</td>
                     <td><ActionMenu t={t} /></td>

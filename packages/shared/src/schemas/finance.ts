@@ -2,7 +2,6 @@ import { z } from 'zod';
 import {
   ACCOUNT_TYPES,
   TRANSACTION_TYPES,
-  PAYMENT_MODES,
   CATEGORY_KINDS,
 } from '../enums.js';
 
@@ -64,7 +63,6 @@ export const transactionCreateSchema = z
     amountMinor: minorAmount.positive(),
     currencyCode: currency.default('INR'),
     merchant: z.string().max(200).nullish(),
-    mode: enumOf(PAYMENT_MODES).nullish(),
     accountId: uuid.nullish(),
     fromAccountId: uuid.nullish(),
     toAccountId: uuid.nullish(),
@@ -102,7 +100,6 @@ export const transactionUpdateSchema = z.object({
   amountMinor: minorAmount.positive().optional(),
   currencyCode: currency.optional(),
   merchant: z.string().max(200).nullish(),
-  mode: enumOf(PAYMENT_MODES).nullish(),
   accountId: uuid.nullish(),
   fromAccountId: uuid.nullish(),
   toAccountId: uuid.nullish(),
@@ -119,7 +116,6 @@ export const transactionQuerySchema = z.object({
   accountId: uuid.optional(),
   categoryId: uuid.optional(),
   tagId: uuid.optional(),
-  mode: enumOf(PAYMENT_MODES).optional(),
   q: z.string().max(200).optional(),
   from: isoDate.optional(),
   to: isoDate.optional(),
@@ -136,7 +132,6 @@ export const presetCreateSchema = z.object({
   merchant: z.string().max(200).nullish(),
   categoryId: uuid.nullish(),
   subcategoryId: uuid.nullish(),
-  mode: enumOf(PAYMENT_MODES).nullish(),
   accountId: uuid.nullish(),
   amountMinor: minorAmount.positive().nullish(), // null = prompt on apply
   tags: z.array(uuid).default([]),

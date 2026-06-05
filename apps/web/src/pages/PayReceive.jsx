@@ -23,8 +23,7 @@ const PI = {
   wallet: ['M3 7a2 2 0 0 1 2-2h12a1.5 1.5 0 0 1 1.5 1.5V7', 'M3 7v10a2 2 0 0 0 2 2h13a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 18 8.5H5a2 2 0 0 1-2-1.5'],
 };
 const STORE = 'balance.payrecv.v1';
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
 const TODAY = '2025-06-30';
 const RECV_C = '#15803d', PAY_C = '#c0606a';

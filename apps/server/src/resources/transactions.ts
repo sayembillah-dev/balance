@@ -79,7 +79,6 @@ transactionsRouter.get('/', async (req, res) => {
 
   const conds: SQL[] = [owned(transactions, userId)];
   if (q.type) conds.push(eq(transactions.type, q.type));
-  if (q.mode) conds.push(eq(transactions.mode, q.mode));
   if (q.categoryId) conds.push(eq(transactions.categoryId, q.categoryId));
   if (q.accountId) {
     conds.push(

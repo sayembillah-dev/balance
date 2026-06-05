@@ -6,10 +6,23 @@ import { apiUpload, apiObjectUrl, apiPost, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
 
-const TIMEZONES = [
-  'Asia/Kolkata (GMT+5:30)', 'Asia/Dhaka (GMT+6:00)',
-  'America/New_York (GMT−5:00)', 'Europe/London (GMT+0:00)',
-].map((t) => ({ value: t, label: t }));
+// Full IANA timezone list (every zone the runtime knows), each labelled with its
+// current UTC offset. Falls back to a short list on older engines.
+const TZ_FALLBACK = ['UTC', 'Asia/Kolkata', 'Asia/Dhaka', 'America/New_York', 'Europe/London'];
+const tzOffset = (zone) => {
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value || '';
+  } catch { return ''; }
+};
+const ALL_TZ = (() => {
+  try { return typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : TZ_FALLBACK; }
+  catch { return TZ_FALLBACK; }
+})();
+const TIMEZONES = ALL_TZ.map((z) => ({ value: z, label: `${z.replace(/_/g, ' ')} — ${tzOffset(z)}` }));
+const BROWSER_TZ = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
+})();
 
 const G = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -25,13 +38,11 @@ const GI = {
   user: ['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M5 20a7 7 0 0 1 14 0'],
   sliders: ['M3 6h11', 'M18 6h3', 'M16 4.2v3.6', 'M3 12h5', 'M12 12h9', 'M10 10.2v3.6', 'M3 18h11', 'M18 18h3', 'M16 16.2v3.6'],
   plug: ['M9 3v5', 'M15 3v5', 'M7 8h10v3a5 5 0 0 1-10 0V8Z', 'M12 16v5'],
-  bank: ['M4 10h16', 'M5 10 12 4l7 6', 'M6 10v8', 'M10 10v8', 'M14 10v8', 'M18 10v8', 'M4 21h16'],
-  cloud: ['M7 18a4 4 0 0 1 .6-7.96A5 5 0 0 1 17.5 11 3.5 3.5 0 0 1 17 18H7Z'],
 };
 const STORE = 'balance.settings.v1';
 
 const DEFAULTS = {
-  name: 'Ananya Sharma', email: 'ananya@example.com', phone: '+91 98765 43210', timezone: 'Asia/Kolkata (GMT+5:30)',
+  name: 'Ananya Sharma', email: 'ananya@example.com', phone: '+91 98765 43210', timezone: BROWSER_TZ,
   currency: 'INR', monthStart: '1', rollover: true, tagBehavior: 'parallel', privacy: false,
   twoFactor: true, loginAlerts: true, biometric: false,
   sync: true, googleDrive: false, weeklyEmail: true,
@@ -78,7 +89,7 @@ function ProfilePanel({ d, set, avatarUrl, fileRef, onPickPhoto }) {
         <Row title="Email address" sub="Your sign-in email can't be changed here."><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink-3)' }} value={d.email} readOnly disabled /></Row>
         <Row title="Phone"><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink)' }} value={d.phone} onChange={(e) => set('phone', e.target.value)} /></Row>
         <Row title="Time zone">
-          <Select value={d.timezone} onChange={(v) => set('timezone', v)} options={TIMEZONES} ariaLabel="Time zone" />
+          <Select value={String(d.timezone || '').split(' (')[0].trim()} onChange={(v) => set('timezone', v)} options={TIMEZONES} ariaLabel="Time zone" />
         </Row>
       </div>
     </>
@@ -129,14 +140,12 @@ function PrefsPanel({ d, set }) {
   );
 }
 
-function SecurityPanel({ d, set, a }) {
+function SecurityPanel({ a }) {
   return (
     <>
       <div className="set-group-t">Authentication</div>
       <div className="set-group">
         <Row title="Password" sub="Change the password you sign in with."><button className="btn-ghost" onClick={a.changePassword}><G d={GI.key} />Change password</button></Row>
-        <Row title="Two-factor authentication" sub="Require a verification code at login for extra security."><Switch on={d.twoFactor} onClick={() => set('twoFactor', !d.twoFactor)} /></Row>
-        <Row title="Biometric unlock" sub="Use Face ID / fingerprint to open the app on supported devices."><Switch on={d.biometric} onClick={() => set('biometric', !d.biometric)} /></Row>
       </div>
       <div className="set-group-t">Sessions</div>
       <div className="set-group">
@@ -150,22 +159,8 @@ function SecurityPanel({ d, set, a }) {
 }
 
 function DataPanel({ a }) {
-  // Integrations that need external services aren't built yet — shown as upcoming
-  // rather than as dead toggles.
-  const integ = (logo, bg, name, meta) => (
-    <div className="integ">
-      <span className="ilogo" style={{ background: bg }}>{logo}</span>
-      <div className="imeta"><b>{name}</b><span>{meta}</span></div>
-      <span className="conn-pill off">Coming soon</span>
-    </div>
-  );
   return (
     <>
-      <div className="set-group-t">Connections</div>
-      <div className="set-group">
-        {integ(<G d={GI.bank} />, '#2f6fe0', 'Bank sync', 'Auto-import transactions from linked accounts')}
-        {integ(<G d={GI.cloud} />, '#15803d', 'Google Drive backup', 'Back up your data every night')}
-      </div>
       <div className="set-group-t">Your data</div>
       <div className="set-group">
         <Row title="Export transactions" sub="Download all your transactions as a CSV file."><button className="btn-ghost" onClick={a.exportCsv}><G d={GI.download} />Export CSV</button></Row>
@@ -227,8 +222,8 @@ export default function Settings() {
       const txns = window.BAL.loadTxns();
       const accts = window.BAL.loadAccounts();
       const nameOf = (id) => (accts.find((x) => x.id === id) || {}).name || '';
-      const head = ['Date', 'Type', 'Merchant', 'Category', 'Subcategory', 'Mode', 'Amount', 'Account', 'From', 'To'];
-      const rows = [head, ...txns.map((t) => [t.date, t.type, t.merchant || '', t.category || '', t.subcategory || '', t.mode || '', t.amount, nameOf(t.account), nameOf(t.fromAccount), nameOf(t.toAccount)])];
+      const head = ['Date', 'Type', 'Merchant', 'Category', 'Subcategory', 'Amount', 'Account', 'From', 'To'];
+      const rows = [head, ...txns.map((t) => [t.date, t.type, t.merchant || '', t.category || '', t.subcategory || '', t.amount, nameOf(t.account), nameOf(t.fromAccount), nameOf(t.toAccount)])];
       const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');

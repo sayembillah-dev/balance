@@ -25,15 +25,14 @@ const IX = {
 };
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
-const MODES = ['UPI', 'Card', 'Bank', 'Cash'];
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => window.BAL.today();
 const firstCat = (type) => (window.BAL.categoriesByType(type)[0] || {}).name || '';
 const money = (n) => window.BAL.fmt(n);
 
 function blankFor(tab, accts) {
   if (tab === 'transfer') return { type: 'transfer', amount: '', fromAccount: accts[0] ? accts[0].id : '', toAccount: accts[1] ? accts[1].id : (accts[0] ? accts[0].id : ''), merchant: '', date: today() };
   const type = tab === 'income' ? 'income' : 'expense';
-  return { type, merchant: '', amount: '', category: firstCat(type), subcategory: '', mode: 'UPI', account: accts[0] ? accts[0].id : '', tags: [], date: today() };
+  return { type, merchant: '', amount: '', category: firstCat(type), subcategory: '', account: accts[0] ? accts[0].id : '', tags: [], date: today() };
 }
 
 function TxnFields({ f, set, setCat, toggleTag, accts, tags, catOpts, subOpts }) {
@@ -51,17 +50,10 @@ function TxnFields({ f, set, setCat, toggleTag, accts, tags, catOpts, subOpts })
             options={[{ value: '', label: subOpts.length === 0 ? 'None' : '— none —' }, ...subOpts.map((s) => ({ value: s, label: s }))]} />
         </div>
       </div>
-      <div className="field-row">
-        <div className="field">
-          <label>Mode</label>
-          <Select value={f.mode} onChange={(v) => set('mode', v)} ariaLabel="Mode"
-            options={MODES.map((m) => ({ value: m, label: m }))} />
-        </div>
-        <div className="field">
-          <label>Account</label>
-          <Select value={f.account} onChange={(v) => set('account', v)} ariaLabel="Account"
-            options={accts.map((a) => ({ value: a.id, label: a.name }))} />
-        </div>
+      <div className="field">
+        <label>Account</label>
+        <Select value={f.account} onChange={(v) => set('account', v)} ariaLabel="Account"
+          options={accts.map((a) => ({ value: a.id, label: a.name }))} />
       </div>
       <div className="field">
         <label>Tags</label>
@@ -131,10 +123,10 @@ function PresetEditor({ initial, accts, tags, onSave, onClose }) {
 }
 
 function newPreset(accts) {
-  return { name: '', type: 'expense', merchant: '', category: firstCat('expense'), subcategory: '', mode: 'UPI', account: accts[0] ? accts[0].id : '', tags: [], amount: null };
+  return { name: '', type: 'expense', merchant: '', category: firstCat('expense'), subcategory: '', account: accts[0] ? accts[0].id : '', tags: [], amount: null };
 }
 function presetFromTxn(t) {
-  return { name: t.merchant || '', type: t.type === 'income' ? 'income' : 'expense', merchant: t.merchant || '', category: t.category || firstCat('expense'), subcategory: t.subcategory || '', mode: t.mode || 'UPI', account: t.account || '', tags: [...(t.tags || [])], amount: t.amount != null ? t.amount : null };
+  return { name: t.merchant || '', type: t.type === 'income' ? 'income' : 'expense', merchant: t.merchant || '', category: t.category || firstCat('expense'), subcategory: t.subcategory || '', account: t.account || '', tags: [...(t.tags || [])], amount: t.amount != null ? t.amount : null };
 }
 
 function Modal({ open, onClose }) {
@@ -169,7 +161,7 @@ function Modal({ open, onClose }) {
     let rec;
     if (tab === 'transfer') {
       const acName = (id) => (accts.find((a) => a.id === id) || {}).name || '';
-      rec = { id: editing ? editing.id : window.BAL.newId(), type: 'transfer', date: f.date, amount: Math.abs(Number(f.amount)), fromAccount: f.fromAccount, toAccount: f.toAccount, account: f.fromAccount, category: 'Transfer', mode: 'Transfer', merchant: f.merchant.trim() || `${acName(f.fromAccount)} → ${acName(f.toAccount)}`, tags: [] };
+      rec = { id: editing ? editing.id : window.BAL.newId(), type: 'transfer', date: f.date, amount: Math.abs(Number(f.amount)), fromAccount: f.fromAccount, toAccount: f.toAccount, account: f.fromAccount, category: 'Transfer', merchant: f.merchant.trim() || `${acName(f.fromAccount)} → ${acName(f.toAccount)}`, tags: [] };
     } else {
       rec = { ...f, id: editing ? editing.id : window.BAL.newId(), amount: Math.abs(Number(f.amount)), merchant: f.merchant.trim(), tags: f.tags || [] };
     }
@@ -185,7 +177,7 @@ function Modal({ open, onClose }) {
   const applyPreset = (pr) => {
     const base = blankFor(pr.type, accts);
     setTab(pr.type);
-    setF({ ...base, type: pr.type, merchant: pr.merchant || '', category: pr.category || firstCat(pr.type), subcategory: pr.subcategory || '', mode: pr.mode || 'UPI', account: pr.account || base.account, tags: [...(pr.tags || [])], amount: (pr.amount != null && pr.amount !== '') ? pr.amount : '', date: today() });
+    setF({ ...base, type: pr.type, merchant: pr.merchant || '', category: pr.category || firstCat(pr.type), subcategory: pr.subcategory || '', account: pr.account || base.account, tags: [...(pr.tags || [])], amount: (pr.amount != null && pr.amount !== '') ? pr.amount : '', date: today() });
   };
 
   const TABS = [['expense', 'Expense', IX.exp], ['income', 'Income', IX.inc], ['transfer', 'Transfer', IX.transfer], ['preset', 'Preset', IX.preset]];

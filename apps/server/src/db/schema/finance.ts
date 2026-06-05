@@ -17,7 +17,6 @@ import { pk, audit, money } from '../columns.js';
 import {
   accountTypeEnum,
   transactionTypeEnum,
-  paymentModeEnum,
   categoryKindEnum,
 } from '../enums.js';
 import { users } from './users.js';
@@ -87,8 +86,7 @@ export const tags = pgTable(
  * One row per expense / income / transfer. Transfers reuse the same row with
  * `fromAccountId`/`toAccountId` set (and `accountId` NULL); expense/income set
  * `accountId`. The CHECK enforces that shape. Category/subcategory/account are
- * FKs (ON DELETE SET NULL) so renames are safe and orphaned refs can't form;
- * `mode` is a fixed enum, not an entity.
+ * FKs (ON DELETE SET NULL) so renames are safe and orphaned refs can't form.
  */
 export const transactions = pgTable(
   'transactions',
@@ -102,7 +100,6 @@ export const transactions = pgTable(
     amountMinor: money('amount_minor'),
     currencyCode: char('currency_code', { length: 3 }).notNull().default('INR'),
     merchant: text('merchant'),
-    mode: paymentModeEnum('mode'),
     accountId: uuid('account_id').references(() => accounts.id, {
       onDelete: 'set null',
     }),
@@ -176,7 +173,6 @@ export const presets = pgTable(
     subcategoryId: uuid('subcategory_id').references(() => categories.id, {
       onDelete: 'set null',
     }),
-    mode: paymentModeEnum('mode'),
     accountId: uuid('account_id').references(() => accounts.id, {
       onDelete: 'set null',
     }),

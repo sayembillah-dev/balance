@@ -26,8 +26,7 @@ const GI = {
 };
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#0e7490', '#c0606a', '#16a34a', '#b45309', '#9333ea', '#0d9488', '#64748b'];
 
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const fmtDate = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
@@ -111,7 +110,7 @@ function TxnList({ txns }) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let r = txns.filter((t) => (type === 'all' || t.type === type) && (cat === 'all' || t.category === cat)
-      && (!q || t.merchant.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || t.mode.toLowerCase().includes(q)));
+      && (!q || t.merchant.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)));
     r = [...r].sort((a, b) => { let d = sort.key === 'amount' ? a.amount - b.amount : a.date.localeCompare(b.date); if (!d) d = a.id - b.id; return sort.dir === 'asc' ? d : -d; });
     return r;
   }, [txns, query, type, cat, sort]);
@@ -144,7 +143,7 @@ function TxnList({ txns }) {
           {slice.map((t) => (
             <div className="txn-cardrow" key={t.id}>
               <Av t={t} />
-              <div className="tx-mid"><b>{t.merchant}</b><div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category} · {t.mode}</div></div>
+              <div className="tx-mid"><b>{t.merchant}</b><div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category}</div></div>
               <div className="tx-right"><span className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}{window.BAL.fmt(t.amount)}</span><span className="when">{fmtDate(t.date)}</span></div>
             </div>
           ))}
@@ -152,13 +151,12 @@ function TxnList({ txns }) {
       ) : (
         <div className="txn-card"><div className="txn-tablewrap">
           <table className="txn-table">
-            <thead><tr><th>Description</th><th>Category</th><th>Mode</th><Head k="date" label="Date" /><Head k="amount" label="Amount" right /></tr></thead>
+            <thead><tr><th>Description</th><th>Category</th><Head k="date" label="Date" /><Head k="amount" label="Amount" right /></tr></thead>
             <tbody>
               {slice.map((t) => (
                 <tr key={t.id}>
                   <td><div className="tx-merchant"><Av t={t} /><div className="tx-name"><b>{t.merchant}</b></div></div></td>
                   <td><span className="cat-pill"><i style={{ background: catColor(t.category) }} />{t.category}</span></td>
-                  <td><span className="mode-tag">{t.mode}</span></td>
                   <td><span className="tx-date">{fmtDate(t.date)}</span></td>
                   <td className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}{window.BAL.fmt(t.amount)}</td>
                 </tr>

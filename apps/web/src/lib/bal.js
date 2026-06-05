@@ -32,6 +32,46 @@ function setCurrency(c) {
 function fmt(n) { return formatMoney(n, CUR); }
 function sym() { return currencyMeta(CUR).symbol; }
 
+// ── timezone (applied app-wide to date/time display) ─────────────────────────
+// The user's IANA zone from settings. Legacy values were stored with an offset
+// suffix ("Asia/Kolkata (GMT+5:30)") — strip it back to the zone id. Falls back
+// to the browser's zone, then UTC.
+function tz() {
+  const saved = String(settingsObj.timezone || '').split(' (')[0].trim();
+  if (saved) return saved;
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+  catch { return 'UTC'; }
+}
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Today's calendar date (YYYY-MM-DD) in the user's timezone, so new entries
+// default to the right local day even when the server/browser sits elsewhere.
+function today() {
+  try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+  catch { return new Date().toISOString().slice(0, 10); }
+}
+// Format a date for display. Date-only strings (YYYY-MM-DD) are wall-clock
+// calendar dates with no zone, so they're rendered as-is (never shifted a day).
+// Real timestamps are formatted in the user's timezone, with time when asked.
+function fmtDate(value, { withYear = true, short = false, withTime = false } = {}) {
+  if (value == null || value === '') return '—';
+  const str = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str) && !withTime) {
+    const [y, m, d] = str.split('-').map(Number);
+    const mon = MON[m - 1] || '';
+    if (short) return `${d} ${mon}`;
+    return withYear ? `${String(d).padStart(2, '0')} ${mon} ${y}` : `${String(d).padStart(2, '0')} ${mon}`;
+  }
+  const dt = new Date(str);
+  if (isNaN(dt.getTime())) return '—';
+  const opts = {
+    timeZone: tz(), day: '2-digit', month: 'short',
+    ...(withYear ? { year: 'numeric' } : {}),
+    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  };
+  try { return new Intl.DateTimeFormat('en-GB', opts).format(dt); }
+  catch { return str; }
+}
+
 // ── in-memory caches (legacy shapes) ─────────────────────────────────────────
 let accounts = [];
 let txns = [];
@@ -83,7 +123,7 @@ const adaptCategory = (c) => ({
   subs: (c.subs || []).map((s) => ({ id: s.id, name: s.name, hidden: s.hidden })),
 });
 const adaptTxn = (t) => ({
-  id: t.id, date: t.date, merchant: t.merchant, type: t.type, mode: t.mode,
+  id: t.id, date: t.date, merchant: t.merchant, type: t.type,
   amount: toMajor(t.amountMinor, t.currencyCode || CUR),
   account: t.accountId, fromAccount: t.fromAccountId, toAccount: t.toAccountId,
   category: catIdToName.get(t.categoryId) || '',
@@ -92,7 +132,7 @@ const adaptTxn = (t) => ({
   tags: t.tags || [],
 });
 const adaptPreset = (p) => ({
-  id: p.id, name: p.name, type: p.type, merchant: p.merchant, mode: p.mode,
+  id: p.id, name: p.name, type: p.type, merchant: p.merchant,
   account: p.accountId,
   category: catIdToName.get(p.categoryId) || '',
   subcategory: catIdToName.get(p.subcategoryId) || '',
@@ -109,7 +149,7 @@ const toApiTag = (t) => ({ id: t.id, name: t.name, color: t.color });
 const toApiTxn = (t) => ({
   id: t.id, type: t.type, date: t.date,
   amountMinor: toMinor(Number(t.amount) || 0, CUR),
-  merchant: t.merchant || null, mode: t.mode || null,
+  merchant: t.merchant || null,
   accountId: t.account || null,
   fromAccountId: t.fromAccount || null, toAccountId: t.toAccount || null,
   categoryId: parentIdFor(t.category, t.type), subcategoryId: subIdFor(t.category, t.type, t.subcategory),
@@ -119,7 +159,7 @@ const toApiTxn = (t) => ({
 const toApiPreset = (p) => ({
   id: p.id, name: p.name, type: p.type, merchant: p.merchant || null,
   categoryId: parentIdFor(p.category, p.type), subcategoryId: subIdFor(p.category, p.type, p.subcategory),
-  mode: p.mode || null, accountId: p.account || null,
+  accountId: p.account || null,
   amountMinor: p.amount === '' || p.amount == null ? null : toMinor(Number(p.amount), CUR),
   tags: p.tags || [],
 });
@@ -430,6 +470,7 @@ function clearCache() {
 const BAL = {
   newId,
   fmt, sym, currency, setCurrency,
+  tz, today, fmtDate,
   hydrate, clearCache,
   loadAccounts, saveAccounts,
   loadTxns, saveTxns,

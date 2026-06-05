@@ -19,8 +19,7 @@ const NI = {
 };
 const STORE = 'balance.notes.v1';
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#0e7490'];
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const fmtWhen = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]}`; };
+const fmtWhen = (iso) => window.BAL.fmtDate(iso, { withYear: false });
 const uid = (p) => p + Math.random().toString(36).slice(2, 9);
 const NOW = '2025-06-30T10:00:00';
 

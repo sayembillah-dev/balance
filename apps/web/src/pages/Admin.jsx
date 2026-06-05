@@ -22,7 +22,7 @@ const TABS = [
   { id: 'settings', icon: GI.sliders, label: 'Instance' },
 ];
 
-const fmtDate = (s) => (s ? new Date(s).toLocaleDateString() : '—');
+const fmtDate = (s) => window.BAL.fmtDate(s);
 
 export default function Admin() {
   const { user } = useAuth();

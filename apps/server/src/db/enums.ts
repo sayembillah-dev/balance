@@ -2,7 +2,6 @@ import { pgEnum } from 'drizzle-orm/pg-core';
 import {
   ACCOUNT_TYPES,
   TRANSACTION_TYPES,
-  PAYMENT_MODES,
   CATEGORY_KINDS,
   BUDGET_TIMEFRAMES,
   BUDGET_TRACKS,
@@ -16,7 +15,6 @@ import {
 // so DB columns, server validation, and web forms can never drift apart.
 export const accountTypeEnum = pgEnum('account_type', ACCOUNT_TYPES);
 export const transactionTypeEnum = pgEnum('transaction_type', TRANSACTION_TYPES);
-export const paymentModeEnum = pgEnum('payment_mode', PAYMENT_MODES);
 export const categoryKindEnum = pgEnum('category_kind', CATEGORY_KINDS);
 export const budgetTimeframeEnum = pgEnum('budget_timeframe', BUDGET_TIMEFRAMES);
 export const budgetTrackEnum = pgEnum('budget_track', BUDGET_TRACKS);

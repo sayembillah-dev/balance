@@ -9,9 +9,6 @@ export type AccountType = (typeof ACCOUNT_TYPES)[number];
 export const TRANSACTION_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
-export const PAYMENT_MODES = ['UPI', 'Card', 'Bank', 'Cash', 'Transfer'] as const;
-export type PaymentMode = (typeof PAYMENT_MODES)[number];
-
 export const CATEGORY_KINDS = ['expense', 'income'] as const;
 export type CategoryKind = (typeof CATEGORY_KINDS)[number];
 

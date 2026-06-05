@@ -48,8 +48,8 @@ function buildContext() {
   const cats = Object.entries(catSpend).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${inr(v)}`);
   const tagsTop = Object.entries(tagSpend).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => `#${tagName(k)} ${inr(v)}`);
   let extra = '';
-  try { const b = JSON.parse(localStorage.getItem('balance.budgets.v1')); if (Array.isArray(b) && b.length) extra += '\nBudgets: ' + b.map((x) => `${x.name} cap ${inr(x.amount)} (${x.track === 'tag' ? '#tag' : x.category})`).join('; '); } catch (e) {}
-  try { const s = JSON.parse(localStorage.getItem('balance.savings.v1')); if (s && s.goals) extra += '\nGoals: ' + s.goals.map((g) => `${g.title} ${inr(g.saved)}/${inr(g.target)} by ${g.deadline}`).join('; '); } catch (e) {}
+  try { const b = window.BAL.loadBudgets(); if (Array.isArray(b) && b.length) extra += '\nBudgets: ' + b.map((x) => `${x.name} cap ${inr(x.amount)} (${x.track === 'tag' ? '#tag' : x.category})`).join('; '); } catch (e) {}
+  try { const s = window.BAL.loadSavings(); if (s && s.goals && s.goals.length) extra += '\nGoals: ' + s.goals.map((g) => `${g.title} ${inr(g.saved)}/${inr(g.target)} by ${g.deadline}`).join('; '); } catch (e) {}
   return [
     'Accounts (current balance):',
     ...accts.map((a) => `- ${a.name} (${a.type}): ${inr(bal(a))}`),

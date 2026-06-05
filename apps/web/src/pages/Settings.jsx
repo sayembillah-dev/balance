@@ -1,6 +1,6 @@
 /* Balance — Settings.
    Internal tabs; Preferences & Logic is the showcase.
-   Draft/Save/Cancel with localStorage persistence. */
+   Draft/Save/Cancel persisted via the API (profile → /me, prefs → /me/settings). */
 import React, { useState, useRef, useEffect } from 'react';
 import { apiUpload, apiObjectUrl } from '../lib/api.js';
 

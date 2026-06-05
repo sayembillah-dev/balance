@@ -25,7 +25,11 @@ RUN npm run build
 # ---- runtime ----
 FROM node:22-slim AS runtime
 WORKDIR /app
-ENV NODE_ENV=production
+# Runtime defaults for the self-host image. Override via .env / compose if needed.
+ENV NODE_ENV=production \
+    PORT=4000 \
+    DATA_DIR=/data \
+    STORAGE_DRIVER=local
 
 # Bring over the fully built workspace (node_modules incl. the compiled argon2
 # addon, all dist output, and the drizzle migrations).

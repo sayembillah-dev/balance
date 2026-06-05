@@ -1,5 +1,6 @@
 import express, { type Express } from 'express';
 import { APP_NAME } from '@balance/shared';
+import { pool } from './db/client.js';
 
 /**
  * Builds the Express app. Kept separate from the boot logic in index.ts so tests
@@ -16,9 +17,14 @@ export function createApp(): Express {
     res.json({ ok: true, app: APP_NAME });
   });
 
-  // Readiness — dependencies (DB) are reachable. DB check wired in Phase 1.
-  app.get('/readyz', (_req, res) => {
-    res.json({ ok: true });
+  // Readiness — dependencies (DB) are reachable. Used by the container healthcheck.
+  app.get('/readyz', async (_req, res) => {
+    try {
+      await pool.query('select 1');
+      res.json({ ok: true });
+    } catch {
+      res.status(503).json({ ok: false, error: 'database unreachable' });
+    }
   });
 
   return app;

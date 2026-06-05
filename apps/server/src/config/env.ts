@@ -1,5 +1,11 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'node:path';
 import { z } from 'zod';
+
+// Single .env lives at the monorepo root. In Docker, config comes from the
+// process environment instead and the file simply won't be found (that's fine —
+// dotenv never overrides already-set vars).
+config({ path: resolve(import.meta.dirname, '../../../../.env') });
 
 /**
  * Environment is validated once at boot. Missing/invalid required vars cause a

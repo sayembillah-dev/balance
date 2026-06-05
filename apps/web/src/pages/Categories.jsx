@@ -3,6 +3,7 @@
    categories & subs; hide subs (eye) so they drop out of the transaction modal. */
 import React, { useState, useEffect } from 'react';
 import { PencilSimple, Trash, Plus, Eye, EyeSlash, Check, CaretRight, X, ArrowDownLeft, ArrowUpRight } from '@phosphor-icons/react';
+import CatIcon from '../lib/catIcons.jsx';
 
 const CIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const CI = {
@@ -61,7 +62,7 @@ function SubRow({ sub, color, editing, onEdit, onRename, onCancel, onToggle, onD
   }
   return (
     <div className={`sub-row${sub.hidden ? ' is-hidden' : ''}`}>
-      <span className="sub-dot" style={{ background: color }} />
+      <span className="sub-ic" style={{ color }}><CatIcon name={sub.name} /></span>
       <span className="sname">{sub.name}</span>
       {sub.hidden && <span className="htag">Hidden</span>}
       <div className="sub-acts">
@@ -79,7 +80,7 @@ function CatCard({ cat, onEditCat, onDelCat, onManage }) {
   return (
     <div className="cat-card cat-card-click" onClick={() => onManage(cat.id)}>
       <div className="cat-card-h">
-        <span className="cat-chip" style={{ background: cat.color }}>{cat.name.charAt(0).toUpperCase()}</span>
+        <span className="cat-chip" style={{ background: cat.color }}><CatIcon name={cat.name} /></span>
         <div className="cat-h-id">
           <b>{cat.name}</b>
           <span>{cat.subs.length} sub-categor{cat.subs.length === 1 ? 'y' : 'ies'}</span>
@@ -103,7 +104,7 @@ function SubsModal({ cat, editingSub, setEditingSub, onAddSub, onRenameSub, onDe
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
-            <span className="cat-chip" style={{ background: cat.color, width: 34, height: 34, fontSize: 14 }}>{cat.name.charAt(0).toUpperCase()}</span>
+            <span className="cat-chip" style={{ background: cat.color, width: 34, height: 34 }}><CatIcon name={cat.name} /></span>
             <div style={{ minWidth: 0 }}>
               <h3 style={{ lineHeight: 1.15 }}>{cat.name}</h3>
               <p style={{ fontSize: 12, color: 'var(--ink-3)', fontWeight: 500, marginTop: 1 }}>

@@ -3,18 +3,25 @@
    be added one after another. Each step is skippable, and the whole flow can be
    skipped from the top-right. */
 import React, { useState } from 'react';
+import { CreditCard, Bank, Buildings, PiggyBank, DeviceMobile, Money, CurrencyBtc } from '@phosphor-icons/react';
 import { CURRENCIES } from '@balance/shared';
 import { useAuth } from '../lib/auth.jsx';
 import { apiPatch } from '../lib/api.js';
 
 const ACCOUNT_TYPES = [
-  { t: 'Bank', e: '🏦', c: '#2f6fe0' },
-  { t: 'Card', e: '💳', c: '#7c4dd8' },
-  { t: 'Wallet', e: '👛', c: '#138a72' },
-  { t: 'Cash', e: '💵', c: '#e0892f' },
+  { t: 'Credit Card', ic: CreditCard, c: '#7c4dd8' },
+  { t: 'Bank Account', ic: Bank, c: '#2f6fe0' },
+  { t: 'Current Account', ic: Buildings, c: '#0e7490' },
+  { t: 'Saving Account', ic: PiggyBank, c: '#138a72' },
+  { t: 'Mobile Wallet', ic: DeviceMobile, c: '#d6457a' },
+  { t: 'Cash', ic: Money, c: '#e0892f' },
+  { t: 'Crypto Wallet', ic: CurrencyBtc, c: '#b45309' },
 ];
 const GOAL_EMOJIS = ['🎯', '✈️', '💻', '🏠', '🚗', '📱', '💍', '🎓', '🏖️', '🛟'];
-const typeEmoji = (t) => (ACCOUNT_TYPES.find((a) => a.t === t) || {}).e || '🏦';
+const TypeIcon = ({ t, size = 20 }) => {
+  const Ic = (ACCOUNT_TYPES.find((a) => a.t === t) || ACCOUNT_TYPES[1]).ic;
+  return <Ic size={size} />;
+};
 const TOTAL = 5;
 
 export default function Onboarding() {
@@ -25,7 +32,7 @@ export default function Onboarding() {
 
   // Accounts and goals accumulate — the live list comes from window.BAL.
   const [accounts, setAccounts] = useState(() => window.BAL.loadAccounts());
-  const [acctForm, setAcctForm] = useState({ name: '', type: 'Bank', opening: '' });
+  const [acctForm, setAcctForm] = useState({ name: '', type: 'Bank Account', opening: '' });
   const [goals, setGoals] = useState(() => window.BAL.loadSavings().goals || []);
   const [goalForm, setGoalForm] = useState({ emoji: '🎯', title: '', target: '' });
 
@@ -132,7 +139,7 @@ export default function Onboarding() {
                 <div className="ob-list">
                   {accounts.map((a) => (
                     <div className="ob-list-row" key={a.id}>
-                      <span className="ob-list-em">{typeEmoji(a.type)}</span>
+                      <span className="ob-list-em"><TypeIcon t={a.type} size={22} /></span>
                       <span className="ob-list-name">{a.name}<small>{a.type}</small></span>
                       <span className="ob-list-meta">{window.BAL.fmt(a.opening)}</span>
                       <button className="ob-rm" onClick={() => removeAccount(a.id)} aria-label="Remove">×</button>
@@ -142,11 +149,14 @@ export default function Onboarding() {
               )}
 
               <div className="ob-types">
-                {ACCOUNT_TYPES.map((a) => (
-                  <button key={a.t} className={`ob-type${acctForm.type === a.t ? ' on' : ''}`} onClick={() => setAcctForm({ ...acctForm, type: a.t })} style={acctForm.type === a.t ? { borderColor: a.c, color: a.c } : undefined}>
-                    <span>{a.e}</span>{a.t}
-                  </button>
-                ))}
+                {ACCOUNT_TYPES.map((a) => {
+                  const Ic = a.ic;
+                  return (
+                    <button key={a.t} className={`ob-type${acctForm.type === a.t ? ' on' : ''}`} onClick={() => setAcctForm({ ...acctForm, type: a.t })} style={acctForm.type === a.t ? { borderColor: a.c, color: a.c } : undefined}>
+                      <span><Ic size={18} /></span>{a.t}
+                    </button>
+                  );
+                })}
               </div>
               <div className="ob-form">
                 <input className="txn-field" placeholder="Account name (e.g. HDFC Savings)" value={acctForm.name}

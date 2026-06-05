@@ -15,7 +15,6 @@ import {
 import { sql } from 'drizzle-orm';
 import { pk, audit, money } from '../columns.js';
 import {
-  accountTypeEnum,
   transactionTypeEnum,
   categoryKindEnum,
 } from '../enums.js';
@@ -30,7 +29,7 @@ export const accounts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    type: accountTypeEnum('type').notNull(),
+    type: text('type').notNull(),
     number: text('number'),
     color: text('color').notNull(),
     openingMinor: money('opening_minor').default(0),

@@ -715,10 +715,11 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .txn-table th.col-r { text-align: right; }
 
 .tx-actions { position: relative; width: 1%; }
-.kebab { width: 30px; height: 30px; border: none; background: none; border-radius: 7px; color: var(--ink-3); cursor: pointer; display: inline-grid; place-items: center; }
-.kebab:hover, .kebab.open { background: var(--border-soft); color: var(--ink); }
-.kebab svg { width: 18px; height: 18px; }
-.menu { position: absolute; right: 10px; top: 40px; z-index: 40; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 5px; min-width: 168px; display: flex; flex-direction: column; gap: 1px; }
+.kebab { width: 32px; height: 32px; border: none; background: none; border-radius: 9px; color: var(--ink-3); cursor: pointer; display: inline-grid; place-items: center; transition: background 0.14s ease, color 0.14s ease; }
+.kebab:hover, .kebab.open { background: var(--border-soft); color: var(--ink-2); }
+.kebab svg { width: 17px; height: 17px; }
+.menu { position: absolute; right: 10px; top: 40px; z-index: 40; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 6px; min-width: 178px; display: flex; flex-direction: column; gap: 1px; box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.22), 0 2px 8px -3px rgba(0, 0, 0, 0.1); transform-origin: top right; animation: menu-pop 0.13s ease; }
+@keyframes menu-pop { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
 .menu button { display: flex; align-items: center; gap: 10px; padding: 8px 9px; border: none; background: none; border-radius: 7px; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; text-align: left; width: 100%; }
 .menu button:hover { background: var(--border-soft); color: var(--ink); }
 .menu button.danger { color: #c02626; }
@@ -829,6 +830,7 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .cat-go svg { width: 18px; height: 18px; }
 .cat-card-click:hover .cat-go { color: var(--ink-2); }
 .cat-chip { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; color: #fff; flex: 0 0 auto; font-weight: 800; font-size: 16px; }
+.cat-chip svg { width: 21px; height: 21px; }
 .cat-h-id { flex: 1; min-width: 0; }
 .cat-h-id b { font-size: 14.5px; font-weight: 700; color: var(--ink); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cat-h-id span { font-size: 12px; color: var(--ink-3); font-weight: 500; }
@@ -841,10 +843,11 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .sub-list { padding: 7px; display: flex; flex-direction: column; }
 .sub-row { display: flex; align-items: center; gap: 10px; padding: 8px 9px; border-radius: 8px; }
 .sub-row:hover { background: var(--bg); }
-.sub-dot { width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto; }
+.sub-ic { width: 26px; height: 26px; display: grid; place-items: center; flex: 0 0 auto; }
+.sub-ic svg { width: 18px; height: 18px; }
 .sub-row .sname { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sub-row.is-hidden .sname { color: var(--ink-3); }
-.sub-row.is-hidden .sub-dot { opacity: 0.4; }
+.sub-row.is-hidden .sub-ic { opacity: 0.4; }
 .sub-row .htag { font-size: 10.5px; font-weight: 600; color: var(--ink-3); background: var(--border-soft); padding: 2px 7px; border-radius: 5px; }
 .sub-acts { display: flex; gap: 1px; opacity: 0; transition: opacity 0.12s; }
 .sub-row:hover .sub-acts, .sub-row.is-hidden .sub-acts { opacity: 1; }

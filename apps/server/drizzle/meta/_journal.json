@@ -29,6 +29,13 @@
       "when": 1780691392612,
       "tag": "0003_talented_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780699198937,
+      "tag": "0004_slow_loners",
+      "breakpoints": true
     }
   ]
 }

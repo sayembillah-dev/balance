@@ -3,17 +3,19 @@
    balance/income/spent and a searchable, sortable, filterable transaction list. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
-import { Bank, CreditCard, Wallet, Money, Plus, ArrowLeft, X, DotsThreeVertical, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
+import { Bank, CreditCard, Wallet, Money, Buildings, PiggyBank, DeviceMobile, CurrencyBtc, Plus, ArrowLeft, X, DotsThreeVertical, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
 
 const AIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const AI = {
-  bank: Bank, card: CreditCard, wallet: Wallet, cash: Money, plus: Plus, back: ArrowLeft,
-  x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash, search: MagnifyingGlass,
-  arrow: ArrowDown, prev: CaretLeft, next: CaretRight, wallet2: Wallet,
+  plus: Plus, back: ArrowLeft, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  search: MagnifyingGlass, arrow: ArrowDown, prev: CaretLeft, next: CaretRight, wallet: Wallet,
   in: ArrowDownLeft, out: ArrowUpRight, list: ListBullets,
 };
-const TYPE_ICON = { Bank: 'bank', Card: 'card', Wallet: 'wallet', Cash: 'cash' };
-const TYPES = ['Bank', 'Card', 'Wallet', 'Cash'];
+const TYPE_ICON = {
+  'Credit Card': CreditCard, 'Bank Account': Bank, 'Current Account': Buildings,
+  'Saving Account': PiggyBank, 'Mobile Wallet': DeviceMobile, 'Cash': Money, 'Crypto Wallet': CurrencyBtc,
+};
+const TYPES = Object.keys(TYPE_ICON);
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#3aa3a3', '#c0606a', '#475569'];
 
 const CATS_COLOR = (n) => window.BAL.catColor(n);
@@ -243,7 +245,7 @@ export default function Accounts() {
     setMenuId(null); setSelId(null);
   }, []);
 
-  const blank = { name: '', type: 'Bank', number: '', color: COLORS[0], opening: '' };
+  const blank = { name: '', type: 'Bank Account', number: '', color: COLORS[0], opening: '' };
   const sel = accounts.find((a) => a.id === selId);
 
   if (sel) {
@@ -254,7 +256,7 @@ export default function Accounts() {
       <div className="acct">
         <button className="detail-back" onClick={() => setSelId(null)}><AIco d={AI.back} />All accounts</button>
         <div className="detail-hero">
-          <div className="acct-ic" style={{ background: sel.color }}><AIco d={AI[TYPE_ICON[sel.type]]} /></div>
+          <div className="acct-ic" style={{ background: sel.color }}><AIco d={TYPE_ICON[sel.type] || Wallet} /></div>
           <div className="hx"><h2>{sel.name}</h2><p>{sel.type} · {sel.number}</p></div>
           <div className="detail-acts">
             <button className="btn-ghost" onClick={() => setEditing(sel)}><AIco d={AI.edit} />Edit</button>
@@ -305,7 +307,7 @@ export default function Accounts() {
                 </div>
               )}
               <div className="acct-top">
-                <div className="acct-ic" style={{ background: a.color }}><AIco d={AI[TYPE_ICON[a.type]]} /></div>
+                <div className="acct-ic" style={{ background: a.color }}><AIco d={TYPE_ICON[a.type] || Wallet} /></div>
                 <div className="acct-id"><b>{a.name}</b><span>{a.type} · {a.number}</span></div>
               </div>
               <div className="acct-bal"><small>Current balance</small><b className={bal < 0 ? 'neg' : ''}>{money(bal)}</b></div>

@@ -1,6 +1,5 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 import {
-  ACCOUNT_TYPES,
   TRANSACTION_TYPES,
   CATEGORY_KINDS,
   BUDGET_TIMEFRAMES,
@@ -13,7 +12,8 @@ import {
 
 // Postgres enums derived from the single source of truth in @balance/shared,
 // so DB columns, server validation, and web forms can never drift apart.
-export const accountTypeEnum = pgEnum('account_type', ACCOUNT_TYPES);
+// (Account type is a plain text column — its value set evolves, so it's
+// validated in Zod against ACCOUNT_TYPES rather than pinned to a pg enum.)
 export const transactionTypeEnum = pgEnum('transaction_type', TRANSACTION_TYPES);
 export const categoryKindEnum = pgEnum('category_kind', CATEGORY_KINDS);
 export const budgetTimeframeEnum = pgEnum('budget_timeframe', BUDGET_TIMEFRAMES);

@@ -15,18 +15,28 @@ interface SeedCategory {
 // Sensible starter taxonomy for a new account (mirrors the design mockup). No
 // fake accounts or transactions — the user adds their own real accounts.
 const DEFAULT_CATEGORIES: SeedCategory[] = [
-  { kind: 'expense', name: 'Food', color: '#e0892f', subs: ['Restaurants', 'Coffee', 'Delivery', 'Snacks'] },
-  { kind: 'expense', name: 'Grocery', color: '#3aa3a3', subs: ['Supermarket', 'Quick commerce'] },
-  { kind: 'expense', name: 'Shopping', color: '#7c4dd8', subs: ['Clothing', 'Electronics', 'Online'] },
-  { kind: 'expense', name: 'Travel', color: '#2f6fe0', subs: ['Flights', 'Trains', 'Cabs', 'Fuel'] },
-  { kind: 'expense', name: 'Movie', color: '#d6457a', subs: ['Cinema', 'Streaming'] },
-  { kind: 'expense', name: 'Bills', color: '#c0606a', subs: ['Electricity', 'Internet', 'Mobile', 'Subscriptions'] },
-  { kind: 'expense', name: 'Health', color: '#16a34a', subs: ['Pharmacy', 'Doctor', 'Fitness'] },
-  { kind: 'expense', name: 'Investment', color: '#138a72', subs: ['Stocks', 'Mutual Funds'] },
-  { kind: 'income', name: 'Salary', color: '#15803d', subs: ['Monthly', 'Bonus'] },
-  { kind: 'income', name: 'Freelance', color: '#0e7490', subs: ['Projects', 'Consulting'] },
-  { kind: 'income', name: 'Investments', color: '#0d9488', subs: ['Dividends', 'Interest', 'Capital Gains'] },
-  { kind: 'income', name: 'Other Income', color: '#64748b', subs: ['Refunds', 'Gifts'] },
+  // ── Income (flat — no subcategories) ──────────────────────────────────────
+  { kind: 'income', name: 'Salary / Wages', color: '#15803d', subs: [] },
+  { kind: 'income', name: 'Freelance / Contract Work', color: '#0e7490', subs: [] },
+  { kind: 'income', name: 'Business Revenue / Online Sales', color: '#2f6fe0', subs: [] },
+  { kind: 'income', name: 'Allowances / Pocket Money', color: '#e0892f', subs: [] },
+  { kind: 'income', name: 'Investment / Interest Returns', color: '#0d9488', subs: [] },
+  { kind: 'income', name: 'Gifts Received', color: '#d6457a', subs: [] },
+  { kind: 'income', name: 'Refunds / Reimbursements', color: '#64748b', subs: [] },
+
+  // ── Expenses ──────────────────────────────────────────────────────────────
+  { kind: 'expense', name: 'Housing & Utilities', color: '#2f6fe0', subs: ['Rent', 'Electricity', 'Water & Gas', 'Internet / Broadband', 'Home Maintenance'] },
+  { kind: 'expense', name: 'Shopping', color: '#7c4dd8', subs: ['Gadgets & Electronics', 'Fashion Item', 'Clothing', 'Makeup & Cosmetics'] },
+  { kind: 'expense', name: 'Food & Dining', color: '#e0892f', subs: ['Groceries', 'Restaurants / Dining Out', 'Coffee Shops / Snacks', 'Food Delivery'] },
+  { kind: 'expense', name: 'Transportation', color: '#0e7490', subs: ['Public Transit', 'Ride-shares', 'Fuel / Gas', 'Vehicle Maintenance', 'Train / Plane'] },
+  { kind: 'expense', name: 'Education', color: '#d6457a', subs: ['University Tuition', 'Books & Supplies', 'Online Courses / Certifications'] },
+  { kind: 'expense', name: 'Tech & Subscriptions', color: '#475569', subs: ['Server Hosting', 'Software Licenses', 'Mobile Recharge / Data Packs', 'Streaming Services'] },
+  { kind: 'expense', name: 'Business Operations', color: '#b45309', subs: ['Inventory Purchases', 'Courier / Shipping', 'Packaging Materials'] },
+  { kind: 'expense', name: 'Entertainment & Hobbies', color: '#9333ea', subs: ['Gaming', 'Photography Gear & Editing Tools', 'Movies'] },
+  { kind: 'expense', name: 'Health & Personal', color: '#16a34a', subs: ['Doctor Visits', 'Medicines', 'Gym / Fitness', 'Haircuts / Grooming', 'Lotions'] },
+  { kind: 'expense', name: 'Financial & Fees', color: '#c0606a', subs: ['Bank Charges', 'Credit Card Payments', 'Loan Repayments'] },
+  { kind: 'expense', name: 'Giving & Social', color: '#138a72', subs: ['Charity', 'Gifts Given', 'Club Memberships / Dues'] },
+  { kind: 'expense', name: 'Others', color: '#64748b', subs: ['Lost', 'Unknown', 'Reconcile'] },
 ];
 
 const DEFAULT_TAGS = [

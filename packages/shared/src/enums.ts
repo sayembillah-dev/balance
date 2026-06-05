@@ -3,7 +3,15 @@
  * (forms). Keep these in lockstep with the Drizzle pgEnum definitions.
  */
 
-export const ACCOUNT_TYPES = ['Bank', 'Card', 'Wallet', 'Cash'] as const;
+export const ACCOUNT_TYPES = [
+  'Credit Card',
+  'Bank Account',
+  'Current Account',
+  'Saving Account',
+  'Mobile Wallet',
+  'Cash',
+  'Crypto Wallet',
+] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export const TRANSACTION_TYPES = ['expense', 'income', 'transfer'] as const;

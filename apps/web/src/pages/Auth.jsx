@@ -33,12 +33,19 @@ export default function Auth() {
 
   const submit = async (e) => {
     e.preventDefault();
+    // Read straight from the form, not just React state: browser autofill can
+    // populate the inputs without firing onChange, leaving state stale/empty.
+    const fd = new FormData(e.currentTarget);
+    const emailV = (fd.get('email') ?? email ?? '').toString().trim();
+    const passwordV = (fd.get('password') ?? password ?? '').toString();
+    const nameV = (fd.get('name') ?? name ?? '').toString().trim();
+
     setError('');
     setBusy(true);
     try {
-      if (isSetup) await setup({ email, password, name });
-      else if (mode === 'signup') await signup({ email, password, name, invite: invite || undefined });
-      else await login(email, password);
+      if (isSetup) await setup({ email: emailV, password: passwordV, name: nameV });
+      else if (mode === 'signup') await signup({ email: emailV, password: passwordV, name: nameV, invite: invite || undefined });
+      else await login(emailV, passwordV);
       // On success the AuthProvider flips status → the Gate swaps to the app.
     } catch (err) {
       setError(err?.message || 'Something went wrong. Please try again.');
@@ -95,7 +102,7 @@ export default function Auth() {
               <div className="field">
                 <label htmlFor="name">Full name</label>
                 <div className="input">
-                  <input id="name" type="text" placeholder="Ananya Sharma" autoComplete="name"
+                  <input id="name" name="name" type="text" placeholder="Ananya Sharma" autoComplete="name"
                     value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
               </div>
@@ -104,7 +111,7 @@ export default function Auth() {
             <div className="field">
               <label htmlFor="email">Email address</label>
               <div className="input">
-                <input id="email" type="email" placeholder="you@example.com" autoComplete="email"
+                <input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email"
                   value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
@@ -112,7 +119,7 @@ export default function Auth() {
             <div className="field">
               <label htmlFor="password">Password</label>
               <div className="input">
-                <input id="password" type={showPw ? 'text' : 'password'} placeholder="••••••••"
+                <input id="password" name="password" type={showPw ? 'text' : 'password'} placeholder="••••••••"
                   autoComplete={wantsName ? 'new-password' : 'current-password'}
                   value={password} onChange={(e) => setPassword(e.target.value)} required minLength={wantsName ? 8 : undefined} />
                 <button type="button" className="toggle-pw" aria-label="Show password" onClick={() => setShowPw((v) => !v)} style={showPw ? { color: 'var(--primary-ink)' } : undefined}>

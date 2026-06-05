@@ -334,9 +334,11 @@ function Library({ active, onToggle, onClose }) {
 
 export default function Dashboard() {
   const [widgets, setWidgets] = useState(() => {
+    // A new account is seeded with DEFAULT_WIDGETS server-side, so a stored array
+    // (even empty) is the user's real choice — respect it exactly. DEFAULTS is
+    // only a fallback if no layout exists at all.
     const s = window.BAL.loadWidgets();
-    if (Array.isArray(s) && s.length) return s.filter((id) => CATALOG[id]);
-    return DEFAULTS;
+    return Array.isArray(s) && s.length ? s.filter((id) => CATALOG[id]) : (Array.isArray(s) ? [] : DEFAULTS);
   });
   const [cols, setCols] = useState(4);
   const [libOpen, setLibOpen] = useState(false);

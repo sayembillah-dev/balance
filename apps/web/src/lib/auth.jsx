@@ -3,8 +3,8 @@
    logout. Data is hydrated into window.BAL before `status` flips to 'authed', so
    pages mount with populated caches. */
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { api, apiPost, setAccessToken } from './api.js';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { api, apiPost, setAccessToken, refreshSession } from './api.js';
 import BAL from './bal.js';
 
 const AuthContext = createContext(null);
@@ -29,8 +29,11 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const { accessToken } = await api('/auth/refresh', { method: 'POST' }, { auth: false, retry: false });
-      setAccessToken(accessToken);
+      // refreshSession() is deduped: even if this runs twice (React StrictMode
+      // double-invokes effects in dev), only ONE /auth/refresh fires — otherwise
+      // the second call replays an already-rotated token and reuse-detection
+      // would revoke the whole session.
+      await refreshSession();
       const me = await api('/me');
       await enter(me);
     } catch {
@@ -38,7 +41,12 @@ export function AuthProvider({ children }) {
     }
   }, [enter]);
 
+  // Run exactly once on mount (the ref guard also neutralises StrictMode's
+  // double-invoke, so we never fire a redundant refresh).
+  const didRestore = useRef(false);
   useEffect(() => {
+    if (didRestore.current) return;
+    didRestore.current = true;
     restore();
   }, [restore]);
 

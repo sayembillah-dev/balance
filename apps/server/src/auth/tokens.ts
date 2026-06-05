@@ -9,6 +9,9 @@ import { unauthorized } from '../lib/errors.js';
 
 export const ACCESS_TTL = '15m';
 export const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+// A just-rotated token presented again within this window is treated as a benign
+// double-submit (multiple tabs loading, a retried request) rather than theft.
+const REFRESH_GRACE_MS = 10 * 1000;
 
 export interface AccessPayload {
   sub: string; // user id
@@ -82,6 +85,13 @@ export async function rotateRefreshToken(
   if (!row) throw unauthorized('Invalid refresh token');
 
   if (row.revokedAt) {
+    // Within the grace window this is almost certainly a benign double-use
+    // (multi-tab load / StrictMode / retry), so issue a fresh token in the same
+    // family instead of nuking it. Outside the window, treat as theft.
+    if (Date.now() - row.revokedAt.getTime() < REFRESH_GRACE_MS) {
+      const next = await issueRefreshToken(row.userId, ctx, row.familyId);
+      return { token: next.token, userId: row.userId };
+    }
     await revokeFamily(row.familyId);
     throw unauthorized('Refresh token reuse detected');
   }

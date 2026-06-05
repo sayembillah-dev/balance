@@ -76,7 +76,7 @@ export default function Auth() {
           <div className="pv-top">
             <div>
               <div className="pv-lab">Net balance</div>
-              <div className="pv-val">₹8,98,450</div>
+              <div className="pv-val">$8,98,450</div>
             </div>
             <span className="pv-chip">+6.2%</span>
           </div>

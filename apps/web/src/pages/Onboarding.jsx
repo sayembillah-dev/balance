@@ -1,6 +1,7 @@
 /* Balance — first-run onboarding. A short, friendly, skippable setup: welcome →
-   currency (applied app-wide) → first account → first goal → done. Each step is
-   skippable, and the whole flow can be skipped from the top-right. */
+   currency (applied app-wide) → accounts → goals → done. Accounts and goals can
+   be added one after another. Each step is skippable, and the whole flow can be
+   skipped from the top-right. */
 import React, { useState } from 'react';
 import { CURRENCIES } from '@balance/shared';
 import { useAuth } from '../lib/auth.jsx';
@@ -13,7 +14,7 @@ const ACCOUNT_TYPES = [
   { t: 'Cash', e: '💵', c: '#e0892f' },
 ];
 const GOAL_EMOJIS = ['🎯', '✈️', '💻', '🏠', '🚗', '📱', '💍', '🎓', '🏖️', '🛟'];
-
+const typeEmoji = (t) => (ACCOUNT_TYPES.find((a) => a.t === t) || {}).e || '🏦';
 const TOTAL = 5;
 
 export default function Onboarding() {
@@ -21,8 +22,12 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [currency, setCurrency] = useState('INR');
-  const [acct, setAcct] = useState({ name: '', type: 'Bank', opening: '' });
-  const [goal, setGoal] = useState({ emoji: '🎯', title: '', target: '' });
+
+  // Accounts and goals accumulate — the live list comes from window.BAL.
+  const [accounts, setAccounts] = useState(() => window.BAL.loadAccounts());
+  const [acctForm, setAcctForm] = useState({ name: '', type: 'Bank', opening: '' });
+  const [goals, setGoals] = useState(() => window.BAL.loadSavings().goals || []);
+  const [goalForm, setGoalForm] = useState({ emoji: '🎯', title: '', target: '' });
 
   const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'there';
   const sym = (CURRENCIES.find((c) => c.code === currency) || CURRENCIES[0]).symbol;
@@ -36,26 +41,35 @@ export default function Onboarding() {
     setBusy(false); next();
   };
 
-  const addAccount = async () => {
-    if (!acct.name.trim()) return;
-    setBusy(true);
-    const meta = ACCOUNT_TYPES.find((a) => a.t === acct.type);
-    window.BAL.saveAccounts([
-      ...window.BAL.loadAccounts(),
-      { id: window.BAL.newId(), name: acct.name.trim(), type: acct.type, number: null, color: meta.c, opening: Number(acct.opening) || 0 },
-    ]);
-    setBusy(false); next();
+  const addAccount = () => {
+    if (!acctForm.name.trim()) return;
+    const meta = ACCOUNT_TYPES.find((a) => a.t === acctForm.type);
+    const acc = { id: window.BAL.newId(), name: acctForm.name.trim(), type: acctForm.type, number: null, color: meta.c, opening: Number(acctForm.opening) || 0 };
+    const list = [...window.BAL.loadAccounts(), acc];
+    window.BAL.saveAccounts(list);
+    setAccounts(list);
+    setAcctForm({ name: '', type: acctForm.type, opening: '' });
+  };
+  const removeAccount = (id) => {
+    const list = window.BAL.loadAccounts().filter((a) => a.id !== id);
+    window.BAL.saveAccounts(list);
+    setAccounts(list);
   };
 
-  const addGoal = async () => {
-    if (!goal.title.trim() || !(Number(goal.target) > 0)) { next(); return; }
-    setBusy(true);
+  const addGoal = () => {
+    if (!goalForm.title.trim() || !(Number(goalForm.target) > 0)) return;
+    const g = { id: window.BAL.newId(), emoji: goalForm.emoji, title: goalForm.title.trim(), target: Number(goalForm.target), saved: 0, deadline: '', created: new Date().toISOString().slice(0, 10) };
     const data = window.BAL.loadSavings();
-    window.BAL.saveSavings({
-      pool: data.pool || 0,
-      goals: [...(data.goals || []), { id: window.BAL.newId(), emoji: goal.emoji, title: goal.title.trim(), target: Number(goal.target), saved: 0, deadline: '', created: new Date().toISOString().slice(0, 10) }],
-    });
-    setBusy(false); next();
+    const list = [...(data.goals || []), g];
+    window.BAL.saveSavings({ pool: data.pool || 0, goals: list });
+    setGoals(list);
+    setGoalForm({ emoji: goalForm.emoji, title: '', target: '' });
+  };
+  const removeGoal = (id) => {
+    const data = window.BAL.loadSavings();
+    const list = (data.goals || []).filter((g) => g.id !== id);
+    window.BAL.saveSavings({ pool: data.pool || 0, goals: list });
+    setGoals(list);
   };
 
   return (
@@ -107,56 +121,98 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* 2 — First account */}
+          {/* 2 — Accounts (add as many as you like) */}
           {step === 2 && (
             <div className="ob-step">
               <div className="ob-emoji pop">🏦</div>
-              <h1>Add your first account</h1>
-              <p>Where's your money? Add a bank, card, wallet or cash so you can start tracking. You can add more anytime.</p>
+              <h1>Add your accounts</h1>
+              <p>Where's your money? Add a bank, card, wallet or cash — as many as you like. You can add more anytime.</p>
+
+              {accounts.length > 0 && (
+                <div className="ob-list">
+                  {accounts.map((a) => (
+                    <div className="ob-list-row" key={a.id}>
+                      <span className="ob-list-em">{typeEmoji(a.type)}</span>
+                      <span className="ob-list-name">{a.name}<small>{a.type}</small></span>
+                      <span className="ob-list-meta">{window.BAL.fmt(a.opening)}</span>
+                      <button className="ob-rm" onClick={() => removeAccount(a.id)} aria-label="Remove">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="ob-types">
                 {ACCOUNT_TYPES.map((a) => (
-                  <button key={a.t} className={`ob-type${acct.type === a.t ? ' on' : ''}`} onClick={() => setAcct({ ...acct, type: a.t })} style={acct.type === a.t ? { borderColor: a.c, color: a.c } : undefined}>
+                  <button key={a.t} className={`ob-type${acctForm.type === a.t ? ' on' : ''}`} onClick={() => setAcctForm({ ...acctForm, type: a.t })} style={acctForm.type === a.t ? { borderColor: a.c, color: a.c } : undefined}>
                     <span>{a.e}</span>{a.t}
                   </button>
                 ))}
               </div>
               <div className="ob-form">
-                <input className="txn-field" placeholder="Account name (e.g. HDFC Savings)" value={acct.name} onChange={(e) => setAcct({ ...acct, name: e.target.value })} autoFocus />
+                <input className="txn-field" placeholder="Account name (e.g. HDFC Savings)" value={acctForm.name}
+                  onChange={(e) => setAcctForm({ ...acctForm, name: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addAccount(); }} />
                 <div className="ob-amount">
                   <span className="ob-amt-sym">{sym}</span>
-                  <input className="txn-field" type="number" min="0" placeholder="0" value={acct.opening} onChange={(e) => setAcct({ ...acct, opening: e.target.value })} />
+                  <input className="txn-field" type="number" min="0" placeholder="0" value={acctForm.opening}
+                    onChange={(e) => setAcctForm({ ...acctForm, opening: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addAccount(); }} />
                   <small>current balance</small>
                 </div>
               </div>
+              <button className="ob-add" onClick={addAccount} disabled={!acctForm.name.trim()}>＋ Add account</button>
+
               <div className="ob-actions">
-                <button className="btn-ghost" onClick={next} disabled={busy}>Skip for now</button>
-                <button className="btn-primary ob-cta" onClick={addAccount} disabled={busy || !acct.name.trim()}>Add account</button>
+                <button className={accounts.length ? 'btn-primary ob-cta' : 'btn-ghost'} onClick={next} disabled={busy}>
+                  {accounts.length ? `Continue${accounts.length > 1 ? ` with ${accounts.length} accounts` : ''}` : 'Skip for now'}
+                </button>
               </div>
             </div>
           )}
 
-          {/* 3 — First goal */}
+          {/* 3 — Goals (add as many as you like) */}
           {step === 3 && (
             <div className="ob-step">
-              <div className="ob-emoji pop">{goal.emoji}</div>
+              <div className="ob-emoji pop">{goalForm.emoji}</div>
               <h1>Dream a little</h1>
-              <p>Saving for something? Set a goal and watch it fill up. Totally optional.</p>
+              <p>Saving for something? Add one goal or several — watch them fill up. Totally optional.</p>
+
+              {goals.length > 0 && (
+                <div className="ob-list">
+                  {goals.map((g) => (
+                    <div className="ob-list-row" key={g.id}>
+                      <span className="ob-list-em">{g.emoji}</span>
+                      <span className="ob-list-name">{g.title}</span>
+                      <span className="ob-list-meta">{window.BAL.fmt(g.target)}</span>
+                      <button className="ob-rm" onClick={() => removeGoal(g.id)} aria-label="Remove">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="ob-emojis">
                 {GOAL_EMOJIS.map((e) => (
-                  <button key={e} className={`ob-em${goal.emoji === e ? ' on' : ''}`} onClick={() => setGoal({ ...goal, emoji: e })}>{e}</button>
+                  <button key={e} className={`ob-em${goalForm.emoji === e ? ' on' : ''}`} onClick={() => setGoalForm({ ...goalForm, emoji: e })}>{e}</button>
                 ))}
               </div>
               <div className="ob-form">
-                <input className="txn-field" placeholder="Goal name (e.g. New laptop)" value={goal.title} onChange={(e) => setGoal({ ...goal, title: e.target.value })} />
+                <input className="txn-field" placeholder="Goal name (e.g. New laptop)" value={goalForm.title}
+                  onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addGoal(); }} />
                 <div className="ob-amount">
                   <span className="ob-amt-sym">{sym}</span>
-                  <input className="txn-field" type="number" min="0" placeholder="0" value={goal.target} onChange={(e) => setGoal({ ...goal, target: e.target.value })} />
+                  <input className="txn-field" type="number" min="0" placeholder="0" value={goalForm.target}
+                    onChange={(e) => setGoalForm({ ...goalForm, target: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addGoal(); }} />
                   <small>target amount</small>
                 </div>
               </div>
+              <button className="ob-add" onClick={addGoal} disabled={!goalForm.title.trim() || !(Number(goalForm.target) > 0)}>＋ Add goal</button>
+
               <div className="ob-actions">
-                <button className="btn-ghost" onClick={next} disabled={busy}>Skip</button>
-                <button className="btn-primary ob-cta" onClick={addGoal} disabled={busy}>{goal.title.trim() && Number(goal.target) > 0 ? 'Add goal' : 'Continue'}</button>
+                <button className={goals.length ? 'btn-primary ob-cta' : 'btn-ghost'} onClick={next} disabled={busy}>
+                  {goals.length ? `Continue${goals.length > 1 ? ` with ${goals.length} goals` : ''}` : 'Skip'}
+                </button>
               </div>
             </div>
           )}
@@ -195,16 +251,16 @@ const OB_CSS = `
 .ob-dot { width: 30px; height: 5px; border-radius: 99px; background: var(--border, #e2e5ea); transition: background .3s; }
 .ob-dot.on { background: var(--primary, #4f46e5); }
 .ob-card { background: var(--card, #fff); border: 1px solid var(--border, #e7e9ee); border-radius: 22px;
-  box-shadow: 0 24px 60px -28px rgba(20,20,40,.35); padding: 38px 34px;
+  box-shadow: 0 24px 60px -28px rgba(20,20,40,.35); padding: 34px 32px;
   animation: obIn .42s cubic-bezier(.2,.8,.2,1); }
 .ob-step { text-align: center; }
-.ob-emoji { font-size: 64px; line-height: 1; margin-bottom: 10px; }
-.ob-step h1 { font-size: 26px; margin: 6px 0 8px; color: var(--ink, #15171c); }
+.ob-emoji { font-size: 60px; line-height: 1; margin-bottom: 8px; }
+.ob-step h1 { font-size: 25px; margin: 4px 0 6px; color: var(--ink, #15171c); }
 .ob-step p { color: var(--ink-2, #5b606b); margin: 0 0 6px; line-height: 1.5; }
 .ob-soft { color: var(--ink-3, #9aa0aa) !important; font-size: 14px; }
-.ob-actions { display: flex; gap: 10px; justify-content: center; margin-top: 24px; }
+.ob-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
 .ob-cta { min-width: 180px; }
-.ob-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0 4px; }
+.ob-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 4px; }
 .ob-cur { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px; cursor: pointer;
   border: 2px solid var(--border, #e7e9ee); border-radius: 14px; background: var(--card, #fff); transition: .16s; }
 .ob-cur:hover { border-color: var(--primary, #4f46e5); transform: translateY(-2px); }
@@ -212,17 +268,30 @@ const OB_CSS = `
 .ob-cur b { font-size: 24px; }
 .ob-cur span { font-weight: 700; font-size: 13px; }
 .ob-cur small { color: var(--ink-3, #9aa0aa); font-size: 11px; }
-.ob-types { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 18px 0 14px; }
+.ob-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 4px; text-align: left; }
+.ob-list-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+  background: var(--bg, #f6f7f9); border: 1px solid var(--border, #eef0f3); animation: obIn .25s ease; }
+.ob-list-em { font-size: 20px; }
+.ob-list-name { flex: 1; font-weight: 600; display: flex; flex-direction: column; line-height: 1.2; }
+.ob-list-name small { color: var(--ink-3, #9aa0aa); font-weight: 500; font-size: 12px; }
+.ob-list-meta { font-weight: 700; color: var(--ink-2, #5b606b); }
+.ob-rm { border: none; background: none; cursor: pointer; font-size: 20px; color: var(--ink-3, #b3b8c0); line-height: 1; }
+.ob-rm:hover { color: #dc2626; }
+.ob-types { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 14px 0 12px; }
 .ob-type { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 99px; cursor: pointer;
   border: 2px solid var(--border, #e7e9ee); background: var(--card, #fff); font-weight: 600; transition: .16s; }
 .ob-type.on { background: var(--primary-soft, #eef0ff); }
-.ob-form { display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 6px; }
+.ob-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
 .ob-form .txn-field { width: 100%; height: 46px; }
 .ob-amount { position: relative; display: flex; align-items: center; gap: 10px; }
 .ob-amount .txn-field { padding-left: 30px; flex: 1; }
 .ob-amt-sym { position: absolute; left: 12px; font-weight: 700; color: var(--ink-2, #5b606b); pointer-events: none; }
 .ob-amount small { color: var(--ink-3, #9aa0aa); font-size: 12px; white-space: nowrap; }
-.ob-emojis { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 0; }
+.ob-add { margin-top: 12px; width: 100%; padding: 11px; border-radius: 12px; cursor: pointer; font-weight: 700;
+  border: 2px dashed var(--border, #d8dce2); background: none; color: var(--primary, #4f46e5); transition: .16s; }
+.ob-add:hover:not(:disabled) { border-color: var(--primary, #4f46e5); background: var(--primary-soft, #eef0ff); }
+.ob-add:disabled { opacity: .45; cursor: not-allowed; }
+.ob-emojis { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 14px 0; }
 .ob-em { font-size: 22px; width: 42px; height: 42px; border-radius: 12px; cursor: pointer;
   border: 2px solid var(--border, #e7e9ee); background: var(--card, #fff); transition: .14s; }
 .ob-em:hover { transform: scale(1.08); }

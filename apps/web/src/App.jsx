@@ -107,6 +107,15 @@ export default function App() {
   // fire the initial page event so pages that depend on it measure/refresh
   useEffect(() => { window.dispatchEvent(new CustomEvent('balance:page', { detail: active })); }, []); // eslint-disable-line
 
+  // Re-render the whole shell (and thus every mounted page) when the currency
+  // changes, so amounts everywhere immediately reformat with the new symbol.
+  const [, bumpCurrency] = useState(0);
+  useEffect(() => {
+    const h = () => bumpCurrency((n) => n + 1);
+    window.addEventListener('balance:currency', h);
+    return () => window.removeEventListener('balance:currency', h);
+  }, []);
+
   const toggleSidebar = () => {
     if (window.matchMedia('(max-width: 760px)').matches) { setNavOpen(false); return; }
     setCollapsed((c) => { const n = !c; localStorage.setItem('balance.collapsed', n ? '1' : '0'); return n; });

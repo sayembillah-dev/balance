@@ -20,7 +20,15 @@ import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from './api.js';
 // and changeable at runtime (e.g. from onboarding). Applied app-wide via fmt().
 let CUR = 'INR';
 function currency() { return CUR; }
-function setCurrency(c) { CUR = c || 'INR'; settingsObj = { ...settingsObj, currency: CUR }; emitChanged(); }
+function setCurrency(c) {
+  CUR = c || 'INR';
+  settingsObj = { ...settingsObj, currency: CUR };
+  emitChanged();
+  // Dedicated event so the app shell can re-render every (mounted) page at once —
+  // money is formatted at render time, so all pages must refresh to pick up the
+  // new symbol, not just the few that listen for data changes.
+  window.dispatchEvent(new CustomEvent('balance:currency', { detail: CUR }));
+}
 function fmt(n) { return formatMoney(n, CUR); }
 function sym() { return currencyMeta(CUR).symbol; }
 

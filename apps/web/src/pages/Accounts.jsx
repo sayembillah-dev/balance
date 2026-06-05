@@ -2,6 +2,7 @@
    List/create/update/delete accounts; open an account to see its
    balance/income/spent and a searchable, sortable, filterable transaction list. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Select from '../components/Select.jsx';
 
 const AIco = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -76,9 +77,8 @@ function AccountModal({ initial, onSave, onClose }) {
           <div className="field-row">
             <div className="field">
               <label>Type</label>
-              <select value={f.type} onChange={(e) => set('type', e.target.value)}>
-                {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select value={f.type} onChange={(v) => set('type', v)} ariaLabel="Account type"
+                options={TYPES.map((t) => ({ value: t, label: t }))} />
             </div>
             <div className="field">
               <label>Opening balance ({window.BAL.sym()})</label>
@@ -161,10 +161,8 @@ function TxnList({ txns }) {
             <button key={v} className={type === v ? 'on' : ''} onClick={() => setType(v)}>{l}</button>
           ))}
         </div>
-        <select className="txn-field" value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="all">All categories</option>
-          {CAT_LIST().map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <Select value={cat} onChange={(v) => setCat(v)} ariaLabel="Filter by category"
+          options={[{ value: 'all', label: 'All categories' }, ...CAT_LIST().map((c) => ({ value: c, label: c }))]} />
       </div>
 
       {slice.length === 0 ? (

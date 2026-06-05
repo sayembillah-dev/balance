@@ -2,6 +2,7 @@
    Budgets track either a Category or a Tag. Tag budgets choose Parallel
    (count toward category too) or Isolated tracking. */
 import React, { useState, useEffect, useRef } from 'react';
+import Select from '../components/Select.jsx';
 
 const B = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -66,9 +67,8 @@ function BudgetModal({ initial, tags, cats, onSave, onClose }) {
             </div>
             <div className="field">
               <label>Timeframe</label>
-              <select value={f.timeframe} onChange={(e) => set('timeframe', e.target.value)}>
-                {TIMEFRAMES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select value={f.timeframe} onChange={(v) => set('timeframe', v)} ariaLabel="Timeframe"
+                options={TIMEFRAMES.map((t) => ({ value: t, label: t }))} />
             </div>
           </div>
 
@@ -83,10 +83,8 @@ function BudgetModal({ initial, tags, cats, onSave, onClose }) {
           {f.track === 'category' ? (
             <div className="field">
               <label>Category</label>
-              <select value={f.category || ''} onChange={(e) => set('category', e.target.value)}>
-                <option value="">Choose a category…</option>
-                {cats.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <Select value={f.category || ''} onChange={(v) => set('category', v)} placeholder="Choose a category…" ariaLabel="Category"
+                options={cats.map((c) => ({ value: c, label: c }))} />
             </div>
           ) : (
             <>

@@ -2,6 +2,7 @@
    Search, filter, sort, paginate; edit/duplicate/delete.
    Responsive: table on wide containers, card list on narrow (mobile/tablet). */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Select from '../components/Select.jsx';
 
 const TIco = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -186,14 +187,10 @@ function Transactions() {
             <button key={v} className={type === v ? 'on' : ''} onClick={() => setType(v)}>{l}</button>
           ))}
         </div>
-        <select className="txn-field" value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="all">All categories</option>
-          {window.BAL.catNames().map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select className="txn-field" value={mode} onChange={(e) => setMode(e.target.value)}>
-          <option value="all">All modes</option>
-          {MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <Select value={cat} onChange={(v) => setCat(v)} ariaLabel="Filter by category"
+          options={[{ value: 'all', label: 'All categories' }, ...window.BAL.catNames().map((c) => ({ value: c, label: c }))]} />
+        <Select value={mode} onChange={(v) => setMode(v)} ariaLabel="Filter by mode"
+          options={[{ value: 'all', label: 'All modes' }, ...MODES.map((m) => ({ value: m, label: m }))]} />
       </div>
 
       {slice.length === 0 ? (

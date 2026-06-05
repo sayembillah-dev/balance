@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
+import Select from '../components/Select.jsx';
 
 const G = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -137,8 +138,8 @@ export default function Admin() {
           <form className="field" onSubmit={createInvite} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
             <div><label>Email (optional)</label><input className="txn-field" type="email" placeholder="anyone@example.com"
               value={newInvite.email} onChange={(e) => setNewInvite({ ...newInvite, email: e.target.value })} /></div>
-            <div><label>Role</label><select className="txn-field" value={newInvite.role} onChange={(e) => setNewInvite({ ...newInvite, role: e.target.value })}>
-              <option value="user">User</option><option value="admin">Admin</option></select></div>
+            <div><label>Role</label><Select value={newInvite.role} onChange={(v) => setNewInvite({ ...newInvite, role: v })} ariaLabel="Invite role"
+              options={[{ value: 'user', label: 'User' }, { value: 'admin', label: 'Admin' }]} /></div>
             <div><label>Expires (days)</label><input className="txn-field" type="number" min="1" max="90" style={{ width: 90 }}
               value={newInvite.expiresInDays} onChange={(e) => setNewInvite({ ...newInvite, expiresInDays: e.target.value })} /></div>
             <button className="btn-primary" type="submit">Create invite</button>

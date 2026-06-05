@@ -3,6 +3,7 @@
    Saves transactions via window.BAL.saveTxns; presets via window.BAL.savePresets. */
 import React, { useState, useEffect } from 'react';
 import { apiUpload } from '../lib/api.js';
+import Select from './Select.jsx';
 
 const X = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -41,30 +42,25 @@ function TxnFields({ f, set, setCat, toggleTag, accts, tags, catOpts, subOpts })
       <div className="field-row">
         <div className="field">
           <label>Category</label>
-          <select value={f.category} onChange={(e) => setCat(e.target.value)}>
-            {catOpts.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-          </select>
+          <Select value={f.category} onChange={(v) => setCat(v)} ariaLabel="Category"
+            options={catOpts.map((c) => ({ value: c.name, label: c.name }))} />
         </div>
         <div className="field">
           <label>Sub-category</label>
-          <select value={f.subcategory || ''} onChange={(e) => set('subcategory', e.target.value)} disabled={subOpts.length === 0}>
-            <option value="">{subOpts.length === 0 ? 'None' : '— none —'}</option>
-            {subOpts.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <Select value={f.subcategory || ''} onChange={(v) => set('subcategory', v)} disabled={subOpts.length === 0} ariaLabel="Sub-category"
+            options={[{ value: '', label: subOpts.length === 0 ? 'None' : '— none —' }, ...subOpts.map((s) => ({ value: s, label: s }))]} />
         </div>
       </div>
       <div className="field-row">
         <div className="field">
           <label>Mode</label>
-          <select value={f.mode} onChange={(e) => set('mode', e.target.value)}>
-            {MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <Select value={f.mode} onChange={(v) => set('mode', v)} ariaLabel="Mode"
+            options={MODES.map((m) => ({ value: m, label: m }))} />
         </div>
         <div className="field">
           <label>Account</label>
-          <select value={f.account} onChange={(e) => set('account', e.target.value)}>
-            {accts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          <Select value={f.account} onChange={(v) => set('account', v)} ariaLabel="Account"
+            options={accts.map((a) => ({ value: a.id, label: a.name }))} />
         </div>
       </div>
       <div className="field">
@@ -240,9 +236,9 @@ function Modal({ open, onClose }) {
             <div className="modal-body">
               <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <div className="xfer-row">
-                <div className="field"><label>From</label><select value={f.fromAccount} onChange={(e) => set('fromAccount', e.target.value)}>{accts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+                <div className="field"><label>From</label><Select value={f.fromAccount} onChange={(v) => set('fromAccount', v)} ariaLabel="From account" options={accts.map((a) => ({ value: a.id, label: a.name }))} /></div>
                 <div className="xfer-arrow"><X d={IX.arrow} /></div>
-                <div className="field"><label>To</label><select value={f.toAccount} onChange={(e) => set('toAccount', e.target.value)}>{accts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+                <div className="field"><label>To</label><Select value={f.toAccount} onChange={(v) => set('toAccount', v)} ariaLabel="To account" options={accts.map((a) => ({ value: a.id, label: a.name }))} /></div>
               </div>
               {f.fromAccount === f.toAccount && <div className="form-hint">Choose two different accounts.</div>}
               <div className="field"><label>Note <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label><input value={f.merchant} placeholder="e.g. Move savings" onChange={(e) => set('merchant', e.target.value)} /></div>

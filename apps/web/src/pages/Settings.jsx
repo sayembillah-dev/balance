@@ -4,6 +4,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { apiUpload, apiObjectUrl, apiPost, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
+import Select from '../components/Select.jsx';
+
+const TIMEZONES = [
+  'Asia/Kolkata (GMT+5:30)', 'Asia/Dhaka (GMT+6:00)',
+  'America/New_York (GMT−5:00)', 'Europe/London (GMT+0:00)',
+].map((t) => ({ value: t, label: t }));
 
 const G = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -72,9 +78,7 @@ function ProfilePanel({ d, set, avatarUrl, fileRef, onPickPhoto }) {
         <Row title="Email address" sub="Your sign-in email can't be changed here."><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink-3)' }} value={d.email} readOnly disabled /></Row>
         <Row title="Phone"><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink)' }} value={d.phone} onChange={(e) => set('phone', e.target.value)} /></Row>
         <Row title="Time zone">
-          <select className="txn-field" value={d.timezone} onChange={(e) => set('timezone', e.target.value)}>
-            <option>Asia/Kolkata (GMT+5:30)</option><option>Asia/Dhaka (GMT+6:00)</option><option>America/New_York (GMT−5:00)</option><option>Europe/London (GMT+0:00)</option>
-          </select>
+          <Select value={d.timezone} onChange={(v) => set('timezone', v)} options={TIMEZONES} ariaLabel="Time zone" />
         </Row>
       </div>
     </>
@@ -87,14 +91,12 @@ function PrefsPanel({ d, set }) {
       <div className="set-group-t">Currency &amp; Localization</div>
       <div className="set-group">
         <Row title="Primary currency" sub="This is the primary currency used across your dashboards and analytics.">
-          <select className="txn-field" value={d.currency} onChange={(e) => set('currency', e.target.value)}>
-            {CURRENCIES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
-          </select>
+          <Select value={d.currency} onChange={(v) => set('currency', v)} ariaLabel="Primary currency"
+            options={CURRENCIES.map((c) => ({ value: c.v, label: c.l }))} />
         </Row>
         <Row title="Financial month start" sub="The day your monthly budgets reset and a new period begins.">
-          <select className="txn-field" value={d.monthStart} onChange={(e) => set('monthStart', e.target.value)}>
-            {MONTH_START.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
-          </select>
+          <Select value={d.monthStart} onChange={(v) => set('monthStart', v)} ariaLabel="Financial month start"
+            options={MONTH_START.map((m) => ({ value: m.v, label: m.l }))} />
         </Row>
       </div>
 

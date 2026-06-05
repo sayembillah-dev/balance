@@ -2,6 +2,7 @@
    Tags are colored labels attached to transactions. Create / edit / delete;
    open a tag to see its transactions + totals. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Select from '../components/Select.jsx';
 
 const GIco = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -133,9 +134,8 @@ function TxnList({ txns }) {
       <div className="txn-toolbar" style={{ marginBottom: 14 }}>
         <div className="txn-search"><GIco d={GI.search} /><input value={query} placeholder="Search tagged transactions…" onChange={(e) => setQuery(e.target.value)} /></div>
         <div className="txn-seg">{[['all', 'All'], ['expense', 'Expense'], ['income', 'Income']].map(([v, l]) => <button key={v} className={type === v ? 'on' : ''} onClick={() => setType(v)}>{l}</button>)}</div>
-        <select className="txn-field" value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="all">All categories</option>{CAT_LIST().map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <Select value={cat} onChange={(v) => setCat(v)} ariaLabel="Filter by category"
+          options={[{ value: 'all', label: 'All categories' }, ...CAT_LIST().map((c) => ({ value: c, label: c }))]} />
       </div>
       {slice.length === 0 ? (
         <div className="txn-card"><div className="txn-empty"><b>No transactions</b><span>Nothing matches your filters here.</span></div></div>

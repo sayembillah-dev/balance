@@ -144,6 +144,13 @@ export default function Notes() {
 
   useEffect(() => { window.BAL.saveNotes(notes); }, [notes]);
 
+  // Open the New note modal when triggered from the dashboard Quick Actions.
+  useEffect(() => {
+    const h = () => setEditing({ type: 'note', title: '', body: '', color: COLORS[0] });
+    window.addEventListener('balance:new-note', h);
+    return () => window.removeEventListener('balance:new-note', h);
+  }, []);
+
   const save = (n) => {
     setNotes((all) => n.id ? all.map((x) => x.id === n.id ? { ...n, updated: NOW } : x) : [{ ...n, id: window.BAL.newId(), updated: NOW }, ...all]);
     setEditing(null);

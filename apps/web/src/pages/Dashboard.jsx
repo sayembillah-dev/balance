@@ -30,6 +30,10 @@ const ICONS = {
   arrow:   ['M5 12h14', 'M13 6l6 6-6 6'],
   send:    ['M22 2 11 13', 'M22 2l-7 20-4-9-9-4 20-7Z'],
   request: ['M12 5v14', 'M5 12h14', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z'],
+  income:  ['M7 7v10h10', 'M7 17 17 7'],
+  expense: ['M17 7 7 17', 'M15 17H7V9'],
+  transfer:['M7 7h13', 'm17 4 3 3-3 3', 'M17 17H4', 'm7 14-3 3 3 3'],
+  note:    ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],
 };
 const WIcon = ({ k }) => <Ico d={ICONS[k] || ICONS.wallet} />;
 
@@ -169,10 +173,10 @@ function Quick() {
   const addTxn = (tab) => window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { tab } }));
   const goto = (page) => window.dispatchEvent(new CustomEvent('balance:goto', { detail: page }));
   const acts = [
-    ['send', 'Send', () => addTxn('transfer')],
-    ['request', 'Request', () => goto('pay')],
-    ['plus', 'Add money', () => addTxn('income')],
-    ['card', 'Pay bill', () => addTxn('expense')],
+    ['income', 'Income', () => addTxn('income')],
+    ['expense', 'Expense', () => addTxn('expense')],
+    ['transfer', 'Transfer', () => addTxn('transfer')],
+    ['note', 'Note', () => { goto('note'); window.dispatchEvent(new CustomEvent('balance:new-note')); }],
   ];
   return (
     <div className="wg-body">

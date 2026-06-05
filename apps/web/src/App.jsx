@@ -71,6 +71,33 @@ const NavSvg = ({ paths }) => (
   </svg>
 );
 
+// Live topbar clock — ticks every second and renders in the user's selected
+// timezone (window.BAL.tz()), so changing the zone in Settings is reflected here.
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const tz = window.BAL.tz();
+  const fmt = (locale, opts) => {
+    try { return new Intl.DateTimeFormat(locale, { timeZone: tz, ...opts }).format(now); }
+    catch { return new Intl.DateTimeFormat(locale, opts).format(now); }
+  };
+  // en-US → uppercase "PM"; en-GB → day-month-year date order.
+  const time = fmt('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const date = fmt('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return (
+    <div className="clock" title={tz}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+      {time} <span className="sep">|</span> {date}
+    </div>
+  );
+}
+
 export default function App() {
   const navigate = useNavigate();
   const [active, setActive] = useState(() => localStorage.getItem('balance.active') || 'dashboard');
@@ -197,13 +224,7 @@ export default function App() {
             </div>
 
             <div className="topbar-right">
-              <div className="clock">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v5l3 2" />
-                </svg>
-                11:11 PM <span className="sep">|</span> 31 June 2025
-              </div>
+              <Clock />
 
               <div className="search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

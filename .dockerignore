@@ -1,0 +1,13 @@
+# Build fresh inside the image — never copy host artifacts/secrets.
+node_modules
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.gitignore
+data
+.env
+.env.*
+*.log
+.DS_Store
+.claude

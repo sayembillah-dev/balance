@@ -1,0 +1,53 @@
+# Balance — self-host stack. Two services: Postgres + the app (API + SPA).
+# Quick start:
+#   cp .env.example .env   # optional: set ADMIN_EMAIL/ADMIN_PASSWORD, etc.
+#   docker compose up -d
+#   open http://localhost:4000  → first-run setup wizard
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-balance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-balance}
+      POSTGRES_DB: ${POSTGRES_DB:-balance}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-balance}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # `environment` overrides any value in env_file, so the in-container DB host
+      # is used even if a dev .env points DATABASE_URL at localhost.
+      DATABASE_URL: postgres://${POSTGRES_USER:-balance}:${POSTGRES_PASSWORD:-balance}@db:5432/${POSTGRES_DB:-balance}
+      DATA_DIR: /data
+      STORAGE_DRIVER: local
+    # Optional overrides (ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET, SMTP_*).
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${APP_PORT:-4000}:4000"
+    volumes:
+      - appdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  pgdata:
+  appdata:

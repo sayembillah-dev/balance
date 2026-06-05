@@ -15,6 +15,7 @@ import PayReceive from './pages/PayReceive.jsx';
 import Notes from './pages/Notes.jsx';
 import Budgets from './pages/Budgets.jsx';
 import Settings from './pages/Settings.jsx';
+import Admin from './pages/Admin.jsx';
 import AddTxn from './components/AddTxn.jsx';
 import AiChat from './components/AiChat.jsx';
 
@@ -29,6 +30,7 @@ const I = {
   note: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z', 'M14 3v5h5', 'M9 13h6M9 17h4'],
   budget: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z', 'M12 13h.01'],
   settings: ['M4 7h10', 'M17 4.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z', 'M20 17H10', 'M7 14.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z'],
+  admin: ['M12 3 4 6v5c0 4.5 3.2 7.7 8 9 4.8-1.3 8-4.5 8-9V6Z', 'm9 12 2 2 4-4'],
 };
 
 const NAV = [
@@ -59,6 +61,7 @@ const PAGES = {
   note: Notes,
   budget: Budgets,
   settings: Settings,
+  admin: Admin,
 };
 
 const NavSvg = ({ paths }) => (
@@ -83,6 +86,13 @@ export default function App() {
   const { user, logout } = useAuth();
   const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'there';
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
+
+  // The Admin page + nav item only exist for admins.
+  const isAdmin = user?.role === 'admin';
+  const navGroups = isAdmin
+    ? NAV.map((g) => (g.group === 'General' ? { ...g, items: [...g.items, { key: 'admin', label: 'Admin' }] } : g))
+    : NAV;
+  const pageEntries = Object.entries(PAGES).filter(([k]) => k !== 'admin' || isAdmin);
 
   // fire the initial page event so pages that depend on it measure/refresh
   useEffect(() => { window.dispatchEvent(new CustomEvent('balance:page', { detail: active })); }, []); // eslint-disable-line
@@ -122,7 +132,7 @@ export default function App() {
           </div>
 
           <nav className="nav">
-            {NAV.map((section, si) => (
+            {navGroups.map((section, si) => (
               <div key={section.group} style={{ display: 'contents' }}>
                 {si > 0 && <div className="nav-divider" />}
                 {section.items.map((it) => (
@@ -193,7 +203,7 @@ export default function App() {
           </header>
 
           <section className="canvas">
-            {Object.entries(PAGES).map(([key, Page]) => (
+            {pageEntries.map(([key, Page]) => (
               <div key={key} style={{ display: active === key ? '' : 'none' }}>
                 <Page />
               </div>

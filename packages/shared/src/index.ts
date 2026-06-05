@@ -6,3 +6,4 @@ export * from './money.js';
 export * from './schemas/auth.js';
 export * from './schemas/finance.js';
 export * from './schemas/planning.js';
+export * from './schemas/admin.js';

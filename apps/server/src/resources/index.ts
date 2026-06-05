@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from '../auth/middleware.js';
+import { requireAuth, requireAdmin } from '../auth/middleware.js';
 import { meRouter } from './me.js';
+import { adminRouter } from './admin.js';
 import { accountsRouter } from './accounts.js';
 import { categoriesRouter } from './categories.js';
 import { tagsRouter } from './tags.js';
@@ -28,3 +29,4 @@ apiRouter.use('/budgets', budgetsRouter);
 apiRouter.use('/savings', savingsRouter);
 apiRouter.use('/notes', notesRouter);
 apiRouter.use('/pay-receive', payReceiveRouter);
+apiRouter.use('/admin', requireAdmin, adminRouter);

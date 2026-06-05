@@ -90,13 +90,13 @@ function Donut({ segs }) {
     <div className="wg-body">
       <div className="donut-wrap">
         <div className="donut" style={{ background: `conic-gradient(${stops})` }}>
-          <div className="donut-c"><b>{window.BAL.fmt(total)}</b><span>spent</span></div>
+          <div className="donut-c"><b>{inr(total)}</b><span>spent</span></div>
         </div>
         <div className="legend">
           {segs.map((s, i) => (
             <div className="legend-row" key={s.label}>
               <i style={{ background: CAT[i % CAT.length] }} />
-              <span>{s.label}</span><b>{window.BAL.fmt(s.v)}</b>
+              <span>{s.label}</span><b>{inr(s.v)}</b>
             </div>
           ))}
         </div>
@@ -185,7 +185,11 @@ function Quick() {
 
 // ---------- live data ----------
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const inr = (n) => window.BAL.fmt(n);
+// When the "Mask dashboard balances" privacy setting is on, monetary values are
+// concealed. Refreshed at the top of computeDashboard() so every figure (incl.
+// pre-formatted strings) honours the current setting.
+let MASK = false;
+const inr = (n) => (MASK ? '••••' : window.BAL.fmt(n));
 const ym = (d) => (d || '').slice(0, 7);
 const fmtShort = (d) => { const x = new Date(d); return isNaN(x) ? '' : `${x.getDate()} ${MON[x.getMonth()]}`; };
 
@@ -196,6 +200,7 @@ function Empty({ msg }) {
 // Derive every widget's data from the live caches (window.BAL). Recomputed when
 // data changes, so the dashboard always reflects the real account.
 function computeDashboard() {
+  MASK = !!window.BAL.loadSettings().privacy;
   const accts = window.BAL.loadAccounts();
   const txns = window.BAL.loadTxns();
   const savings = window.BAL.loadSavings();
@@ -393,9 +398,15 @@ export default function Dashboard() {
     e.stopPropagation();
     setDragId(id);
     document.body.style.userSelect = 'none';
-    const move = (ev) => {
+    // Throttle to one reorder check per animation frame: the per-widget
+    // getBoundingClientRect() reads force synchronous layout, so running them on
+    // every raw pointermove (100+/s) is what makes the drag stutter.
+    let frame = null, lastEv = null;
+    const processMove = () => {
+      frame = null;
+      const ev = lastEv;
       const grid = gridRef.current;
-      if (!grid) return;
+      if (!ev || !grid) return;
       let best = null, bestD = Infinity, before = true;
       grid.querySelectorAll('.wg').forEach((el) => {
         const wid = el.dataset.wid;
@@ -416,7 +427,12 @@ export default function Dashboard() {
       arr.splice(idx, 0, id);
       if (arr.join() !== cur.join()) setWidgets(arr);
     };
+    const move = (ev) => {
+      lastEv = ev;
+      if (frame == null) frame = requestAnimationFrame(processMove);
+    };
     const up = () => {
+      if (frame != null) cancelAnimationFrame(frame);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       document.body.style.userSelect = '';

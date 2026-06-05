@@ -11,7 +11,17 @@ const G = ({ d, fill }) => (
     {d.map((p, i) => <path key={i} d={p} />)}
   </svg>
 );
-const GI = { check: ['M5 12.5 10 17l9-10'], key: ['M14 7a4 4 0 1 0-3.5 6.9L9 15.5 7.5 17 6 18.5l1.5 1.5', 'M14 7a4 4 0 0 1 .5 8'], shield: ['M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'], download: ['M12 3v12', 'm7 11 5 5 5-5', 'M5 21h14'] };
+const GI = {
+  check: ['M5 12.5 10 17l9-10'],
+  key: ['M14 7a4 4 0 1 0-3.5 6.9L9 15.5 7.5 17 6 18.5l1.5 1.5', 'M14 7a4 4 0 0 1 .5 8'],
+  shield: ['M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'],
+  download: ['M12 3v12', 'm7 11 5 5 5-5', 'M5 21h14'],
+  user: ['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M5 20a7 7 0 0 1 14 0'],
+  sliders: ['M3 6h11', 'M18 6h3', 'M16 4.2v3.6', 'M3 12h5', 'M12 12h9', 'M10 10.2v3.6', 'M3 18h11', 'M18 18h3', 'M16 16.2v3.6'],
+  plug: ['M9 3v5', 'M15 3v5', 'M7 8h10v3a5 5 0 0 1-10 0V8Z', 'M12 16v5'],
+  bank: ['M4 10h16', 'M5 10 12 4l7 6', 'M6 10v8', 'M10 10v8', 'M14 10v8', 'M18 10v8', 'M4 21h16'],
+  cloud: ['M7 18a4 4 0 0 1 .6-7.96A5 5 0 0 1 17.5 11 3.5 3.5 0 0 1 17 18H7Z'],
+};
 const STORE = 'balance.settings.v1';
 
 const DEFAULTS = {
@@ -30,10 +40,10 @@ const MONTH_START = [
   { v: '1', l: '1st of the month' }, { v: '25', l: '25th of the month' }, { v: 'last', l: 'Last day of month' }, { v: 'payday', l: 'On payday' },
 ];
 const TABS = [
-  { id: 'profile', emoji: '👤', label: 'General Profile' },
-  { id: 'prefs', emoji: '⚙️', label: 'Preferences & Logic' },
-  { id: 'security', emoji: '🔒', label: 'Security & Privacy' },
-  { id: 'data', emoji: '🔌', label: 'Data & Integrations' },
+  { id: 'profile', icon: GI.user, label: 'General Profile' },
+  { id: 'prefs', icon: GI.sliders, label: 'Preferences & Logic' },
+  { id: 'security', icon: GI.shield, label: 'Security & Privacy' },
+  { id: 'data', icon: GI.plug, label: 'Data & Integrations' },
 ];
 
 const Switch = ({ on, onClick }) => <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={!!on} onClick={onClick}><i /></button>;
@@ -44,7 +54,7 @@ const Row = ({ title, sub, children, block, danger }) => (
   </div>
 );
 
-function ProfilePanel({ d, set }) {
+function ProfilePanel({ d, set, avatarUrl, fileRef, onPickPhoto }) {
   return (
     <>
       <div className="set-group">
@@ -151,8 +161,8 @@ function DataPanel({ a }) {
     <>
       <div className="set-group-t">Connections</div>
       <div className="set-group">
-        {integ('🏦', '#2f6fe0', 'Bank sync', 'Auto-import transactions from linked accounts')}
-        {integ('▲', '#15803d', 'Google Drive backup', 'Back up your data every night')}
+        {integ(<G d={GI.bank} />, '#2f6fe0', 'Bank sync', 'Auto-import transactions from linked accounts')}
+        {integ(<G d={GI.cloud} />, '#15803d', 'Google Drive backup', 'Back up your data every night')}
       </div>
       <div className="set-group-t">Your data</div>
       <div className="set-group">
@@ -260,7 +270,7 @@ export default function Settings() {
         <div className="set-nav">
           {TABS.map((t) => (
             <button key={t.id} className={`set-tab${tab === t.id ? ' on' : ''}`} onClick={() => setTab(t.id)}>
-              <span className="ti">{t.emoji}</span>{t.label}
+              <span className="ti"><G d={t.icon} /></span>{t.label}
             </button>
           ))}
         </div>
@@ -268,7 +278,7 @@ export default function Settings() {
           <div><div className="set-h2">{cur.label}</div><div className="set-h2-d">{
             { profile: 'Your personal details and how we reach you.', prefs: 'Currency, budgeting logic and privacy controls.', security: 'Keep your account safe and private.', data: 'Connections, backups and exports.' }[tab]
           }</div></div>
-          <Panel d={d} set={set} a={actions} />
+          <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} />
           <div className="set-foot">
             {justSaved && <span className="saved-note"><G d={GI.check} />All changes saved</span>}
             <button className="btn-ghost" onClick={cancel} disabled={!dirty} style={dirty ? null : { opacity: 0.5, cursor: 'default' }}>Cancel</button>

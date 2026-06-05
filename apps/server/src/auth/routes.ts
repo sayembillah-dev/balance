@@ -42,8 +42,8 @@ function reqContext(req: Request) {
 function setRefreshCookie(res: Response, token: string) {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: env.COOKIE_SECURE,
+    sameSite: 'lax',
     path: COOKIE_PATH,
     maxAge: REFRESH_TTL_MS,
   });

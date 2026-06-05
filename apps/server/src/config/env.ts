@@ -22,6 +22,10 @@ const EnvSchema = z.object({
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
+  // Marks the refresh cookie `Secure`. Must be false when serving over plain
+  // HTTP (browsers drop Secure cookies on http://), true behind HTTPS/a TLS
+  // proxy. Explicit string parse so the literal "false" is honoured.
+  COOKIE_SECURE: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -14,7 +14,7 @@
    and page state, cache, and server always agree on a row's id. */
 
 import { newId, toMinor, toMajor } from '@balance/shared';
-import { apiGet, apiPost, apiPatch, apiDelete } from './api.js';
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from './api.js';
 
 const CUR = 'INR'; // single-currency for now; per-account currency arrives later
 
@@ -24,6 +24,13 @@ let txns = [];
 let categories = [];
 let tags = [];
 let presets = [];
+// batch-2 collections (budgets, savings, notes, pay/receive, settings, widgets)
+let budgets = [];
+let savings = { pool: 0, goals: [] };
+let notes = [];
+let payrecv = [];
+let settingsObj = {};
+let widgets = [];
 
 // category id↔name lookups, rebuilt whenever categories change
 let catIdToName = new Map();
@@ -214,11 +221,126 @@ function categoriesByType(type) {
     .map((c) => ({ name: c.name, subs: (c.subs || []).filter((s) => !s.hidden).map((s) => s.name) }));
 }
 
+// ── batch-2: budgets ─────────────────────────────────────────────────────────
+const catNameToId = (name) => (categories.find((c) => c.name === name) || {}).id || null;
+const adaptBudget = (b) => ({
+  id: b.id, name: b.name, amount: toMajor(b.amountMinor, CUR), timeframe: b.timeframe,
+  track: b.track, category: b.categoryId ? catIdToName.get(b.categoryId) : undefined,
+  tagId: b.tagId || undefined, mode: b.mode || undefined,
+});
+const toApiBudget = (b) => ({
+  id: b.id, name: b.name, amountMinor: toMinor(Number(b.amount) || 0, CUR),
+  timeframe: b.timeframe, track: b.track,
+  categoryId: b.track === 'category' ? catNameToId(b.category) : null,
+  tagId: b.track === 'tag' ? b.tagId || null : null,
+  mode: b.track === 'tag' ? b.mode || 'parallel' : null,
+});
+function loadBudgets() { return budgets; }
+function saveBudgets(list) {
+  const old = budgets; budgets = list; emitChanged();
+  syncFlat('/budgets', old, list, toApiBudget, refillBudgets);
+}
+
+// ── batch-2: savings (pool + goals) ──────────────────────────────────────────
+const adaptGoal = (g) => ({
+  id: g.id, emoji: g.emoji, title: g.title,
+  target: toMajor(g.targetMinor, CUR), saved: toMajor(g.savedMinor, CUR),
+  deadline: g.deadline, created: (g.createdAt || '').slice(0, 10),
+});
+const toApiGoal = (g) => ({
+  id: g.id, emoji: g.emoji || null, title: g.title,
+  targetMinor: toMinor(Number(g.target) || 0, CUR), savedMinor: toMinor(Number(g.saved) || 0, CUR),
+  deadline: g.deadline || null,
+});
+function loadSavings() { return savings; }
+function saveSavings(data) {
+  const old = savings; savings = data; emitChanged();
+  const tasks = [];
+  if ((old.pool || 0) !== (data.pool || 0)) {
+    tasks.push(apiPatch('/savings', { poolMinor: toMinor(Number(data.pool) || 0, CUR) }));
+  }
+  const oldGoals = new Map((old.goals || []).map((g) => [g.id, g]));
+  const newGoals = new Map((data.goals || []).map((g) => [g.id, g]));
+  for (const g of data.goals || []) {
+    const prev = oldGoals.get(g.id);
+    if (!prev) tasks.push(apiPost('/savings/goals', toApiGoal(g)));
+    else if (JSON.stringify(toApiGoal(prev)) !== JSON.stringify(toApiGoal(g))) {
+      const { id, ...patch } = toApiGoal(g);
+      tasks.push(apiPatch(`/savings/goals/${g.id}`, patch));
+    }
+  }
+  for (const g of old.goals || []) if (!newGoals.has(g.id)) tasks.push(apiDelete(`/savings/goals/${g.id}`));
+  runTasks('/savings', tasks, refillSavings);
+}
+
+// ── batch-2: notes (+ todo items) ────────────────────────────────────────────
+const adaptNote = (n) => ({
+  id: n.id, type: n.type, color: n.color, title: n.title,
+  body: n.type === 'note' ? n.body ?? '' : undefined,
+  items: n.type === 'todo' ? (n.items || []).map((i) => ({ id: i.id, text: i.text, done: i.done })) : undefined,
+  updated: n.updatedAt,
+});
+const toApiNote = (n) => ({
+  id: n.id, type: n.type, title: n.title || '', color: n.color || null,
+  body: n.type === 'note' ? n.body || '' : null,
+  // item ids are server-generated (omitted) since items are replaced wholesale
+  items: n.type === 'todo' ? (n.items || []).map((i, idx) => ({ text: i.text || '', done: !!i.done, sortOrder: idx })) : [],
+});
+function loadNotes() { return notes; }
+function saveNotes(list) {
+  const old = notes; notes = list; emitChanged();
+  syncFlat('/notes', old, list, toApiNote, refillNotes);
+}
+
+// ── batch-2: pay & receive ───────────────────────────────────────────────────
+const adaptPR = (p) => ({
+  id: p.id, kind: p.kind, party: p.party, amount: toMajor(p.amountMinor, CUR),
+  due: p.dueDate, note: p.note, settled: p.settled, settledOn: p.settledOn,
+});
+const toApiPR = (p) => ({
+  id: p.id, kind: p.kind, party: p.party, amountMinor: toMinor(Number(p.amount) || 0, CUR),
+  dueDate: p.due || null, note: p.note || null, settled: !!p.settled, settledOn: p.settledOn || null,
+});
+function loadPayRecv() { return payrecv; }
+function savePayRecv(list) {
+  const old = payrecv; payrecv = list; emitChanged();
+  syncFlat('/pay-receive', old, list, toApiPR, refillPayRecv);
+}
+
+// ── batch-2: settings (profile + prefs, flattened) ───────────────────────────
+function loadSettings() { return settingsObj; }
+function saveSettings(d) {
+  settingsObj = { ...settingsObj, ...d };
+  // profile fields → /me ; preference fields → /me/settings (privacy → privacyMask)
+  apiPatch('/me', { name: d.name, phone: d.phone || null, timezone: d.timezone || null })
+    .catch((e) => console.error('[bal] profile save failed', e));
+  apiPatch('/me/settings', {
+    currency: d.currency, monthStart: d.monthStart, rollover: d.rollover,
+    tagBehavior: d.tagBehavior, privacyMask: !!d.privacy, twoFactor: !!d.twoFactor,
+    loginAlerts: !!d.loginAlerts, biometric: !!d.biometric, weeklyEmail: !!d.weeklyEmail,
+  }).catch((e) => console.error('[bal] settings save failed', e));
+}
+
+// ── batch-2: dashboard widgets ───────────────────────────────────────────────
+function loadWidgets() { return widgets; }
+function saveWidgets(list) {
+  widgets = list;
+  apiPut('/me/dashboard', { widgetIds: list }).catch((e) => console.error('[bal] widgets save failed', e));
+}
+
 // ── hydration / reset ────────────────────────────────────────────────────────
 async function refillAccounts() { accounts = (await apiGet('/accounts')).map(adaptAccount); emitChanged(); }
 async function refillTags() { tags = (await apiGet('/tags')).map(adaptTag); emitChanged(); }
 async function refillCategories() { categories = (await apiGet('/categories')).map(adaptCategory); rebuildCatMaps(); emitChanged(); }
 async function refillPresets() { presets = (await apiGet('/presets')).map(adaptPreset); emitChanged(); }
+async function refillBudgets() { budgets = (await apiGet('/budgets')).map(adaptBudget); emitChanged(); }
+async function refillSavings() {
+  const s = await apiGet('/savings');
+  savings = { pool: toMajor(s.poolMinor || 0, CUR), goals: (s.goals || []).map(adaptGoal) };
+  emitChanged();
+}
+async function refillNotes() { notes = (await apiGet('/notes')).map(adaptNote); emitChanged(); }
+async function refillPayRecv() { payrecv = (await apiGet('/pay-receive')).map(adaptPR); emitChanged(); }
 // The pages operate on the full transaction list, so page through the API
 // (server caps a page at 100) following nextCursor until exhausted.
 async function fetchAllTxns() {
@@ -240,24 +362,48 @@ async function refillTxns() {
 }
 
 async function hydrate() {
-  const [accts, cats, tg, pres, allTxns] = await Promise.all([
-    apiGet('/accounts'),
-    apiGet('/categories'),
-    apiGet('/tags'),
-    apiGet('/presets'),
-    fetchAllTxns(),
-  ]);
+  const [accts, cats, tg, pres, allTxns, bud, sav, nts, pr, me, prefs, dash] =
+    await Promise.all([
+      apiGet('/accounts'),
+      apiGet('/categories'),
+      apiGet('/tags'),
+      apiGet('/presets'),
+      fetchAllTxns(),
+      apiGet('/budgets'),
+      apiGet('/savings'),
+      apiGet('/notes'),
+      apiGet('/pay-receive'),
+      apiGet('/me'),
+      apiGet('/me/settings'),
+      apiGet('/me/dashboard'),
+    ]);
   categories = cats.map(adaptCategory);
   rebuildCatMaps();
   accounts = accts.map(adaptAccount);
   tags = tg.map(adaptTag);
   presets = pres.map(adaptPreset);
   txns = allTxns.map(adaptTxn);
+  budgets = bud.map(adaptBudget);
+  savings = { pool: toMajor(sav.poolMinor || 0, CUR), goals: (sav.goals || []).map(adaptGoal) };
+  notes = nts.map(adaptNote);
+  payrecv = pr.map(adaptPR);
+  widgets = dash.widgetIds || [];
+  // Flatten profile (/me) + preferences (/me/settings) into the page's shape.
+  settingsObj = {
+    name: me.name, email: me.email, phone: me.phone || '', timezone: me.timezone || '',
+    currency: prefs.currency ?? 'INR', monthStart: prefs.monthStart ?? '1',
+    rollover: prefs.rollover ?? true, tagBehavior: prefs.tagBehavior ?? 'parallel',
+    privacy: prefs.privacyMask ?? false, twoFactor: prefs.twoFactor ?? false,
+    loginAlerts: prefs.loginAlerts ?? true, biometric: prefs.biometric ?? false,
+    weeklyEmail: prefs.weeklyEmail ?? false,
+  };
   emitChanged();
 }
 
 function clearCache() {
   accounts = []; txns = []; categories = []; tags = []; presets = [];
+  budgets = []; savings = { pool: 0, goals: [] }; notes = []; payrecv = [];
+  settingsObj = {}; widgets = [];
   rebuildCatMaps();
 }
 
@@ -269,6 +415,12 @@ const BAL = {
   loadCategories, saveCategories, catColor, catNames, categoriesByType,
   loadTags, saveTags, tag,
   loadPresets, savePresets,
+  loadBudgets, saveBudgets,
+  loadSavings, saveSavings,
+  loadNotes, saveNotes,
+  loadPayRecv, savePayRecv,
+  loadSettings, saveSettings,
+  loadWidgets, saveWidgets,
 };
 
 if (typeof window !== 'undefined') window.BAL = BAL;

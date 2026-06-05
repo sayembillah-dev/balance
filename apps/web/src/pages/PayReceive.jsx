@@ -38,7 +38,7 @@ const SEED = [
   { id: 'p6', kind: 'payable',    party: 'Electricity',     amount: 1265,  due: '2025-06-10', note: 'June bill',             settled: true,  settledOn: '2025-06-09' },
 ];
 
-const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) return s; } catch (e) {} return SEED.map((x) => ({ ...x })); };
+const load = () => window.BAL.loadPayRecv();
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 
@@ -144,10 +144,10 @@ export default function PayReceive() {
   const [editing, setEditing] = useState(null);
   const [menu, setMenu] = useState(null);
 
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(items)); }, [items]);
+  useEffect(() => { window.BAL.savePayRecv(items); }, [items]);
 
   const save = (it) => {
-    setItems((all) => it.id ? all.map((x) => x.id === it.id ? it : x) : [{ ...it, id: 'p_' + Date.now() }, ...all]);
+    setItems((all) => it.id ? all.map((x) => x.id === it.id ? it : x) : [{ ...it, id: window.BAL.newId() }, ...all]);
     setEditing(null);
   };
   const del = (id) => { setItems((all) => all.filter((x) => x.id !== id)); setMenu(null); };

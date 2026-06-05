@@ -41,7 +41,7 @@ const SEED = {
     { id: 'g4', emoji: '🚗', title: 'New Car', target: 800000, saved: 120000, deadline: '2027-01-01', created: '2025-05-01' },
   ],
 };
-const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && Array.isArray(s.goals)) return s; } catch (e) {} return { pool: SEED.pool, goals: SEED.goals.map((g) => ({ ...g })) }; };
+const load = () => window.BAL.loadSavings();
 
 const monthsBetween = (a, b) => (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + (b.getDate() - a.getDate()) / 30;
 
@@ -209,7 +209,7 @@ export default function Savings() {
   const [alloc, setAlloc] = useState(null);
   const [menu, setMenu] = useState(null);
 
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(data)); }, [data]);
+  useEffect(() => { window.BAL.saveSavings(data); }, [data]);
 
   const allocated = data.goals.reduce((s, g) => s + g.saved, 0);
   const unalloc = data.pool - allocated;
@@ -217,7 +217,7 @@ export default function Savings() {
   const saveGoal = (g) => {
     setData((d) => g.id
       ? { ...d, goals: d.goals.map((x) => x.id === g.id ? { ...x, ...g } : x) }
-      : { ...d, goals: [...d.goals, { ...g, id: 'g_' + Date.now(), created: '2025-06-30' }] });
+      : { ...d, goals: [...d.goals, { ...g, id: window.BAL.newId(), created: new Date().toISOString().slice(0, 10) }] });
     setEditing(null);
   };
   const delGoal = (id) => { setData((d) => ({ ...d, goals: d.goals.filter((x) => x.id !== id) })); setMenu(null); };

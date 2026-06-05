@@ -265,7 +265,8 @@ function Library({ active, onToggle, onClose }) {
 
 export default function Dashboard() {
   const [widgets, setWidgets] = useState(() => {
-    try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) return s.filter((id) => CATALOG[id]); } catch (e) {}
+    const s = window.BAL.loadWidgets();
+    if (Array.isArray(s) && s.length) return s.filter((id) => CATALOG[id]);
     return DEFAULTS;
   });
   const [cols, setCols] = useState(4);
@@ -275,7 +276,7 @@ export default function Dashboard() {
   const widgetsRef = useRef(widgets);
   widgetsRef.current = widgets;
 
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(widgets)); }, [widgets]);
+  useEffect(() => { window.BAL.saveWidgets(widgets); }, [widgets]);
 
   useEffect(() => {
     const el = gridRef.current;

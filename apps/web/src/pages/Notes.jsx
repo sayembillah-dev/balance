@@ -35,7 +35,7 @@ const SEED = [
   { id: 'n3', type: 'note', color: '#2f6fe0', title: 'Goa trip budget', body: 'Flights: ₹9,000\nStay (3 nights): ₹12,000\nFood + activities: ₹8,000\nSplit 4 ways ≈ ₹7,250 each.', updated: '2025-06-25T12:00:00' },
 ];
 
-const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) return s; } catch (e) {} return SEED.map((x) => ({ ...x, items: x.items ? x.items.map((i) => ({ ...i })) : undefined })); };
+const load = () => window.BAL.loadNotes();
 
 function NoteModal({ initial, onSave, onClose }) {
   const [f, setF] = useState(initial);
@@ -143,10 +143,10 @@ export default function Notes() {
   const [editing, setEditing] = useState(null);
   const [menu, setMenu] = useState(null);
 
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(notes)); }, [notes]);
+  useEffect(() => { window.BAL.saveNotes(notes); }, [notes]);
 
   const save = (n) => {
-    setNotes((all) => n.id ? all.map((x) => x.id === n.id ? { ...n, updated: NOW } : x) : [{ ...n, id: uid('n_'), updated: NOW }, ...all]);
+    setNotes((all) => n.id ? all.map((x) => x.id === n.id ? { ...n, updated: NOW } : x) : [{ ...n, id: window.BAL.newId(), updated: NOW }, ...all]);
     setEditing(null);
   };
   const del = (id) => { setNotes((all) => all.filter((x) => x.id !== id)); setMenu(null); };

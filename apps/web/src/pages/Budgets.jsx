@@ -30,7 +30,7 @@ const SEED = [
   { id: 'b3', name: "Wife's Allowance",  amount: 15000, timeframe: 'Monthly', track: 'tag', tagId: 't_personal', mode: 'parallel' },
   { id: 'b4', name: 'Work (reimbursed)', amount: 10000, timeframe: 'Monthly', track: 'tag', tagId: 't_reimb', mode: 'isolated' },
 ];
-const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) return s; } catch (e) {} return SEED.map((x) => ({ ...x })); };
+const load = () => window.BAL.loadBudgets();
 
 const spentFor = (b, txns) => txns.reduce((s, t) => {
   if (t.type !== 'expense') return s;
@@ -154,7 +154,7 @@ export default function Budgets() {
   const tags = window.BAL.loadTags();
   const cats = window.BAL.loadCategories().filter((c) => c.type === 'expense').map((c) => c.name);
 
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(budgets)); }, [budgets]);
+  useEffect(() => { window.BAL.saveBudgets(budgets); }, [budgets]);
   useEffect(() => {
     const h = () => setTxns(window.BAL.loadTxns());
     window.addEventListener('balance:txn-changed', h);
@@ -162,7 +162,7 @@ export default function Budgets() {
     return () => { window.removeEventListener('balance:txn-changed', h); window.removeEventListener('balance:page', h); };
   }, []);
 
-  const save = (b) => { setBudgets((all) => b.id ? all.map((x) => x.id === b.id ? b : x) : [...all, { ...b, id: 'b_' + Date.now() }]); setEditing(null); };
+  const save = (b) => { setBudgets((all) => b.id ? all.map((x) => x.id === b.id ? b : x) : [...all, { ...b, id: window.BAL.newId() }]); setEditing(null); };
   const del = (id) => { setBudgets((all) => all.filter((x) => x.id !== id)); setMenu(null); };
 
   const totalBudget = budgets.reduce((s, b) => s + b.amount, 0);

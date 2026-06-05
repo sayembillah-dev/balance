@@ -18,7 +18,7 @@ const DEFAULTS = {
   twoFactor: true, loginAlerts: true, biometric: false,
   sync: true, googleDrive: false, weeklyEmail: true,
 };
-const load = () => { try { return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem(STORE)) || {}) }; } catch (e) { return { ...DEFAULTS }; } };
+const load = () => ({ ...DEFAULTS, ...window.BAL.loadSettings() });
 
 const CURRENCIES = [
   { v: 'INR', l: 'INR — ₹ (Indian Rupee)' }, { v: 'USD', l: 'USD — $ (US Dollar)' },
@@ -170,7 +170,7 @@ export default function Settings() {
 
   const set = (k, v) => { setD((p) => ({ ...p, [k]: v })); setJustSaved(false); };
   const dirty = JSON.stringify(d) !== JSON.stringify(saved);
-  const save = () => { localStorage.setItem(STORE, JSON.stringify(d)); setSaved(d); setJustSaved(true); };
+  const save = () => { window.BAL.saveSettings(d); setSaved(d); setJustSaved(true); };
   const cancel = () => { setD(saved); setJustSaved(false); };
 
   const cur = TABS.find((t) => t.id === tab);

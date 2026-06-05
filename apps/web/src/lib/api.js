@@ -79,4 +79,5 @@ export async function api(path, opts = {}, { auth = true, retry = true } = {}) {
 export const apiGet = (path) => api(path);
 export const apiPost = (path, body, opts) => api(path, { method: 'POST', body }, opts);
 export const apiPatch = (path, body) => api(path, { method: 'PATCH', body });
+export const apiPut = (path, body) => api(path, { method: 'PUT', body });
 export const apiDelete = (path) => api(path, { method: 'DELETE' });

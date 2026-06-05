@@ -27,7 +27,7 @@ const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 const MODES = ['UPI', 'Card', 'Bank', 'Cash'];
 const today = () => new Date().toISOString().slice(0, 10);
 const firstCat = (type) => (window.BAL.categoriesByType(type)[0] || {}).name || '';
-const money = (n) => '₹' + Number(n).toLocaleString('en-IN');
+const money = (n) => window.BAL.fmt(n);
 
 function blankFor(tab, accts) {
   if (tab === 'transfer') return { type: 'transfer', amount: '', fromAccount: accts[0] ? accts[0].id : '', toAccount: accts[1] ? accts[1].id : (accts[0] ? accts[0].id : ''), merchant: '', date: today() };
@@ -120,7 +120,7 @@ function PresetEditor({ initial, accts, tags, onSave, onClose }) {
               <button className={`switch${hasAmt ? ' on' : ''}`} role="switch" aria-checked={hasAmt} onClick={() => setHasAmt(!hasAmt)}><i /></button>
             </div>
             {hasAmt
-              ? <input type="number" min="0" value={p.amount || ''} placeholder="Amount (₹)" onChange={(e) => set('amount', e.target.value)} />
+              ? <input type="number" min="0" value={p.amount || ''} placeholder={`Amount (${window.BAL.sym()})`} onChange={(e) => set('amount', e.target.value)} />
               : <div className="form-hint" style={{ color: 'var(--ink-3)', marginTop: 2 }}>You'll be asked for the amount each time you apply this preset.</div>}
           </div>
           <TxnFields f={p} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
@@ -238,7 +238,7 @@ function Modal({ open, onClose }) {
             </>
           ) : tab === 'transfer' ? (
             <div className="modal-body">
-              <div className="field"><label>Amount (₹)</label><input type="number" min="0" autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
+              <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <div className="xfer-row">
                 <div className="field"><label>From</label><select value={f.fromAccount} onChange={(e) => set('fromAccount', e.target.value)}>{accts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
                 <div className="xfer-arrow"><X d={IX.arrow} /></div>
@@ -251,7 +251,7 @@ function Modal({ open, onClose }) {
           ) : (
             <div className="modal-body">
               <div className="field"><label>Description</label><input autoFocus value={f.merchant} placeholder="e.g. Amazon" onChange={(e) => set('merchant', e.target.value)} /></div>
-              <div className="field"><label>Amount (₹)</label><input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
+              <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <TxnFields f={f} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
               <div className="field"><label>Date</label><input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
               <div className="field">

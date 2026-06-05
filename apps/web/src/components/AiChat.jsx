@@ -22,7 +22,7 @@ const AI = {
   arrow:  ['M5 12h14', 'm13 6 6 6-6 6'],
 };
 
-const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const inr = (n) => window.BAL.fmt(n);
 
 function buildContext() {
   const accts = window.BAL.loadAccounts();
@@ -98,7 +98,7 @@ function Chat({ onClose }) {
     setMsgs(history); setInput(''); setBusy(true);
     if (taRef.current) taRef.current.style.height = 'auto';
     const convo = history.map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
-    const prompt = `You are "Balance Assistant", a warm, concise personal-finance helper inside the Balance app. Today is 30 June 2025. Answer ONLY from the DATA below — never invent numbers. Use ₹ and Indian digit grouping. Keep replies short: 1–4 sentences or a tight bullet list. If the user clearly wants to record a transaction, move money to a goal, check a budget, or settle a due, suggest it by adding a tag on its OWN final line: [ACTION:add], [ACTION:allocate], [ACTION:budget], or [ACTION:pay]. Only add an action tag when it genuinely helps.\n\nDATA:\n${buildContext()}\n\nConversation:\n${convo}\nAssistant:`;
+    const prompt = `You are "Balance Assistant", a warm, concise personal-finance helper inside the Balance app. Today is 30 June 2025. Answer ONLY from the DATA below — never invent numbers. Use the ${window.BAL.sym()} symbol for money. Keep replies short: 1–4 sentences or a tight bullet list. If the user clearly wants to record a transaction, move money to a goal, check a budget, or settle a due, suggest it by adding a tag on its OWN final line: [ACTION:add], [ACTION:allocate], [ACTION:budget], or [ACTION:pay]. Only add an action tag when it genuinely helps.\n\nDATA:\n${buildContext()}\n\nConversation:\n${convo}\nAssistant:`;
     try {
       const raw = await window.claude.complete(prompt);
       const { clean, actions } = parseActions(raw || 'Sorry, I could not work that out.');

@@ -61,7 +61,7 @@ function ItemModal({ initial, kind, onSave, onClose }) {
           </div>
           <div className="field-row">
             <div className="field">
-              <label>Amount (₹)</label>
+              <label>Amount ({window.BAL.sym()})</label>
               <input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} />
             </div>
             <div className="field">
@@ -119,7 +119,7 @@ function Item({ it, onToggle, onEdit, onDel, menuOpen, setMenu }) {
         </div>
       </div>
       <div className="pr-right">
-        <div className={`pr-amt ${recv ? 'recv' : 'pay'}`}>₹{grp(it.amount)}</div>
+        <div className={`pr-amt ${recv ? 'recv' : 'pay'}`}>{window.BAL.fmt(it.amount)}</div>
         <div className="pr-actions">
           {it.settled
             ? <button className="btn-sm ghost" onClick={() => onToggle(it.id)}><PIco d={PI.undo} />Unmark</button>
@@ -177,8 +177,8 @@ export default function PayReceive() {
       </div>
 
       <div className="acct-sum">
-        <Tile icon={recv ? PI.in : PI.out} label={recv ? 'To collect' : 'To pay'} value={`₹${grp(outstanding)}`} cls={recv ? 'in' : 'out'} />
-        <Tile icon={PI.check} label={recv ? 'Received' : 'Paid'} value={`₹${grp(settledSum)}`} />
+        <Tile icon={recv ? PI.in : PI.out} label={recv ? 'To collect' : 'To pay'} value={`${window.BAL.fmt(outstanding)}`} cls={recv ? 'in' : 'out'} />
+        <Tile icon={PI.check} label={recv ? 'Received' : 'Paid'} value={`${window.BAL.fmt(settledSum)}`} />
         <Tile icon={PI.clock} label="Overdue" value={overdue} cls={overdue ? 'out' : ''} />
       </div>
 

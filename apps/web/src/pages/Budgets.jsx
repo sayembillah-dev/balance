@@ -20,7 +20,7 @@ const BI = {
   wallet: ['M3 7a2 2 0 0 1 2-2h12a1.5 1.5 0 0 1 1.5 1.5V7', 'M3 7v10a2 2 0 0 0 2 2h13a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 18 8.5H5a2 2 0 0 1-2-1.5'],
 };
 const STORE = 'balance.budgets.v1';
-const money = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const money = (n) => window.BAL.fmt(n);
 const TIMEFRAMES = ['Monthly', 'Weekly', 'Yearly'];
 const catColor = (n) => window.BAL.catColor(n);
 
@@ -60,7 +60,7 @@ function BudgetModal({ initial, tags, cats, onSave, onClose }) {
           <div className="field-row">
             <div className="field">
               <label>Amount</label>
-              <div className="amt-field"><span className="cur">₹</span>
+              <div className="amt-field"><span className="cur">{window.BAL.sym()}</span>
                 <input type="number" min="0" value={f.amount} placeholder="5,000" onChange={(e) => set('amount', e.target.value)} />
               </div>
             </div>

@@ -13,10 +13,16 @@
    amounts, category *names*). Ids are client-minted UUIDv7 so create is idempotent
    and page state, cache, and server always agree on a row's id. */
 
-import { newId, toMinor, toMajor } from '@balance/shared';
+import { newId, toMinor, toMajor, formatMoney, currencyMeta } from '@balance/shared';
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from './api.js';
 
-const CUR = 'INR'; // single-currency for now; per-account currency arrives later
+// Active display/conversion currency — set from the user's settings on hydrate
+// and changeable at runtime (e.g. from onboarding). Applied app-wide via fmt().
+let CUR = 'INR';
+function currency() { return CUR; }
+function setCurrency(c) { CUR = c || 'INR'; settingsObj = { ...settingsObj, currency: CUR }; emitChanged(); }
+function fmt(n) { return formatMoney(n, CUR); }
+function sym() { return currencyMeta(CUR).symbol; }
 
 // ── in-memory caches (legacy shapes) ─────────────────────────────────────────
 let accounts = [];
@@ -313,6 +319,7 @@ function savePayRecv(list) {
 function loadSettings() { return settingsObj; }
 function saveSettings(d) {
   settingsObj = { ...settingsObj, ...d };
+  if (d.currency && d.currency !== CUR) setCurrency(d.currency); // apply app-wide live
   // profile fields → /me ; preference fields → /me/settings (privacy → privacyMask)
   apiPatch('/me', { name: d.name, phone: d.phone || null, timezone: d.timezone || null, avatarUploadId: d.avatarUploadId || null })
     .catch((e) => console.error('[bal] profile save failed', e));
@@ -379,6 +386,8 @@ async function hydrate() {
       apiGet('/me/settings'),
       apiGet('/me/dashboard'),
     ]);
+  // Set the active currency before adapting any amounts.
+  CUR = prefs.currency || 'INR';
   categories = cats.map(adaptCategory);
   rebuildCatMaps();
   accounts = accts.map(adaptAccount);
@@ -398,7 +407,7 @@ async function hydrate() {
     rollover: prefs.rollover ?? true, tagBehavior: prefs.tagBehavior ?? 'parallel',
     privacy: prefs.privacyMask ?? false, twoFactor: prefs.twoFactor ?? false,
     loginAlerts: prefs.loginAlerts ?? true, biometric: prefs.biometric ?? false,
-    weeklyEmail: prefs.weeklyEmail ?? false,
+    weeklyEmail: prefs.weeklyEmail ?? false, onboarded: prefs.onboarded ?? false,
   };
   emitChanged();
 }
@@ -412,6 +421,7 @@ function clearCache() {
 
 const BAL = {
   newId,
+  fmt, sym, currency, setCurrency,
   hydrate, clearCache,
   loadAccounts, saveAccounts,
   loadTxns, saveTxns,

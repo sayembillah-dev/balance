@@ -201,7 +201,7 @@ function Transactions() {
                 <div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category} · {t.mode}</div>
               </div>
               <div className="tx-right">
-                <span className={`tx-amt ${t.type}`}>{sign(t)}₹{fmtAmt(t.amount)}</span>
+                <span className={`tx-amt ${t.type}`}>{sign(t)}{window.BAL.fmt(t.amount)}</span>
                 <span className="when">{fmtDate(t.date)}</span>
               </div>
               <ActionMenu t={t} />
@@ -240,7 +240,7 @@ function Transactions() {
                     <td><span className="cat-pill"><i style={{ background: catColor(t.category) }} />{t.category}</span></td>
                     <td><span className="mode-tag">{t.mode}</span></td>
                     <td><span className="tx-date">{fmtDate(t.date)}</span></td>
-                    <td className={`tx-amt ${t.type}`}>{sign(t)}₹{fmtAmt(t.amount)}</td>
+                    <td className={`tx-amt ${t.type}`}>{sign(t)}{window.BAL.fmt(t.amount)}</td>
                     <td><ActionMenu t={t} /></td>
                   </tr>
                 ))}

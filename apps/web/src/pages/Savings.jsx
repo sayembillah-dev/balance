@@ -29,7 +29,7 @@ const STORE = 'balance.savings.v1';
 const NOW = new Date('2025-06-30T00:00:00');
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (iso) => { if (!iso) return '—'; const d = new Date(iso); return `${MON[d.getMonth()]} ${d.getFullYear()}`; };
-const money = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const money = (n) => window.BAL.fmt(n);
 const EMOJIS = ['💻', '✈️', '🚗', '🏠', '🛟', '🎓', '📱', '💍', '🏖️', '🎮', '💰', '🎯', '📷', '🚲', '🎸'];
 
 const SEED = {
@@ -93,7 +93,7 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
           </div>
           <div className="field-row">
             <div className="field">
-              <label>Target amount (₹)</label>
+              <label>Target amount ({window.BAL.sym()})</label>
               <input type="number" min="0" value={f.target} onChange={(e) => set('target', e.target.value)} />
             </div>
             <div className="field">
@@ -128,7 +128,7 @@ function PoolModal({ pool, allocated, onSave, onClose }) {
         </div>
         <div className="modal-body">
           <div className="field">
-            <label>Cash in savings (₹)</label>
+            <label>Cash in savings ({window.BAL.sym()})</label>
             <input type="number" autoFocus min={allocated} value={v} onChange={(e) => setV(e.target.value)} />
           </div>
           <div className="form-hint" style={{ color: 'var(--ink-3)' }}>Already allocated to goals: {money(allocated)}. The pool can’t be lower than this.</div>
@@ -161,10 +161,10 @@ function AllocModal({ goal, unalloc, onSave, onClose }) {
           </div>
           <div className="goal-prog"><div className="track"><i style={{ width: `${c.pct}%`, background: 'var(--primary)' }} /></div></div>
           <input className="alloc-slider" type="range" min="0" max={Math.round(max)} step="500" value={val} onChange={(e) => setVal(Number(e.target.value))} />
-          <div className="alloc-scale"><span>₹0</span><span>{money(max)}</span></div>
+          <div className="alloc-scale"><span>{money(0)}</span><span>{money(max)}</span></div>
           <div className="alloc-chips">
-            <button className="alloc-chip" onClick={() => setVal(Math.min(max, val + 5000))}>+₹5,000</button>
-            <button className="alloc-chip" onClick={() => setVal(Math.min(max, val + 25000))}>+₹25,000</button>
+            <button className="alloc-chip" onClick={() => setVal(Math.min(max, val + 5000))}>+{window.BAL.sym()}5,000</button>
+            <button className="alloc-chip" onClick={() => setVal(Math.min(max, val + 25000))}>+{window.BAL.sym()}25,000</button>
             <button className="alloc-chip" onClick={() => setVal(Math.min(max, goal.target))}>Fill to target</button>
             <button className="alloc-chip" onClick={() => setVal(Math.round(max))}>Max</button>
           </div>

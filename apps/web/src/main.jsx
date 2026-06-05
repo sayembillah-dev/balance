@@ -10,6 +10,7 @@ import './index.css'
 
 import App from './App.jsx'
 import Auth from './pages/Auth.jsx'
+import Onboarding from './pages/Onboarding.jsx'
 import { AuthProvider, useAuth } from './lib/auth.jsx'
 
 function Splash() {
@@ -23,7 +24,7 @@ function Splash() {
 // Routes the user to auth vs the app based on session status. Setup + anonymous
 // both render <Auth/>, which adapts its copy based on whether setup is needed.
 function Gate() {
-  const { status } = useAuth()
+  const { status, onboarded } = useAuth()
 
   if (status === 'loading') return <Splash />
 
@@ -35,6 +36,9 @@ function Gate() {
       </Routes>
     )
   }
+
+  // New accounts run the first-run onboarding before reaching the app.
+  if (!onboarded) return <Onboarding />
 
   return (
     <Routes>

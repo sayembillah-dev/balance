@@ -18,6 +18,39 @@ export const CURRENCY_EXPONENTS: Record<string, number> = {
 
 export const DEFAULT_CURRENCY = 'INR';
 
+export interface CurrencyMeta {
+  code: string;
+  symbol: string;
+  name: string;
+  locale: string;
+}
+
+/** The currencies offered in onboarding/settings. */
+export const CURRENCIES: CurrencyMeta[] = [
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', locale: 'en-IN' },
+  { code: 'USD', symbol: '$', name: 'US Dollar', locale: 'en-US' },
+  { code: 'EUR', symbol: '€', name: 'Euro', locale: 'en-IE' },
+  { code: 'GBP', symbol: '£', name: 'British Pound', locale: 'en-GB' },
+  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka', locale: 'en-BD' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', locale: 'ja-JP' },
+];
+
+export function currencyMeta(code: string): CurrencyMeta {
+  return CURRENCIES.find((c) => c.code === code) ?? CURRENCIES[0]!;
+}
+
+/**
+ * Formats a MAJOR-unit amount in the app's house style: currency symbol +
+ * grouped integer (no decimals for whole amounts), with a leading minus for
+ * negatives. e.g. formatMoney(-2100, 'USD') → "−$2,100".
+ */
+export function formatMoney(amount: number, currency: string): string {
+  const m = currencyMeta(currency);
+  const n = Number(amount) || 0;
+  const neg = n < 0 ? '−' : '';
+  return `${neg}${m.symbol}${Math.abs(Math.round(n)).toLocaleString(m.locale)}`;
+}
+
 export function exponentFor(currency: string): number {
   return CURRENCY_EXPONENTS[currency] ?? 2;
 }

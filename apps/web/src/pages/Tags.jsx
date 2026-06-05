@@ -145,7 +145,7 @@ function TxnList({ txns }) {
             <div className="txn-cardrow" key={t.id}>
               <Av t={t} />
               <div className="tx-mid"><b>{t.merchant}</b><div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category} · {t.mode}</div></div>
-              <div className="tx-right"><span className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}₹{grp(t.amount)}</span><span className="when">{fmtDate(t.date)}</span></div>
+              <div className="tx-right"><span className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}{window.BAL.fmt(t.amount)}</span><span className="when">{fmtDate(t.date)}</span></div>
             </div>
           ))}
         </div>
@@ -160,7 +160,7 @@ function TxnList({ txns }) {
                   <td><span className="cat-pill"><i style={{ background: catColor(t.category) }} />{t.category}</span></td>
                   <td><span className="mode-tag">{t.mode}</span></td>
                   <td><span className="tx-date">{fmtDate(t.date)}</span></td>
-                  <td className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}₹{grp(t.amount)}</td>
+                  <td className={`tx-amt ${t.type}`}>{t.type === 'income' ? '+' : '−'}{window.BAL.fmt(t.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -229,8 +229,8 @@ export default function Tags() {
         </div>
         <div className="acct-sum">
           <div className="tile"><div className="tlab"><span className="tic"><GIco d={GI.list} /></span>Transactions</div><b>{s.count}</b></div>
-          <div className="tile"><div className="tlab"><span className="tic"><GIco d={GI.out} /></span>Spent</div><b className="out">₹{grp(s.spent)}</b></div>
-          <div className="tile"><div className="tlab"><span className="tic"><GIco d={GI.in} /></span>Income</div><b className="in">₹{grp(s.income)}</b></div>
+          <div className="tile"><div className="tlab"><span className="tic"><GIco d={GI.out} /></span>Spent</div><b className="out">{window.BAL.fmt(s.spent)}</b></div>
+          <div className="tile"><div className="tlab"><span className="tic"><GIco d={GI.in} /></span>Income</div><b className="in">{window.BAL.fmt(s.income)}</b></div>
         </div>
         <TxnList txns={list} />
         {editing && <TagModal key={editing.id || 'new'} initial={editing} onSave={onSave} onClose={() => setEditing(null)} />}
@@ -262,7 +262,7 @@ export default function Tags() {
               </div>
               <div className="tag-foot">
                 <div className="m"><span>Transactions</span><b>{s.count}</b></div>
-                <div className="m"><span>Spent</span><b>₹{grp(s.spent)}</b></div>
+                <div className="m"><span>Spent</span><b>{window.BAL.fmt(s.spent)}</b></div>
               </div>
             </div>
           );

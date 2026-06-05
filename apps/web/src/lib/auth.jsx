@@ -4,7 +4,7 @@
    pages mount with populated caches. */
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { api, apiPost, setAccessToken, refreshSession } from './api.js';
+import { api, apiPost, apiPatch, setAccessToken, refreshSession } from './api.js';
 import BAL from './bal.js';
 
 const AuthContext = createContext(null);
@@ -14,12 +14,19 @@ export function AuthProvider({ children }) {
   // status: 'loading' | 'needsSetup' | 'anon' | 'authed'
   const [status, setStatus] = useState('loading');
   const [user, setUser] = useState(null);
+  const [onboarded, setOnboarded] = useState(true);
 
-  // Hydrate app data, then mark authed.
+  // Hydrate app data, then mark authed. Onboarding state comes from settings.
   const enter = useCallback(async (u) => {
     await BAL.hydrate();
+    setOnboarded(!!BAL.loadSettings().onboarded);
     setUser(u);
     setStatus('authed');
+  }, []);
+
+  const markOnboarded = useCallback(async () => {
+    try { await apiPatch('/me/settings', { onboarded: true }); } catch { /* non-fatal */ }
+    setOnboarded(true);
   }, []);
 
   const restore = useCallback(async () => {
@@ -76,6 +83,6 @@ export function AuthProvider({ children }) {
     setStatus('anon');
   }, []);
 
-  const value = { status, user, login, signup, setup, logout, needsSetup: status === 'needsSetup' };
+  const value = { status, user, onboarded, markOnboarded, login, signup, setup, logout, needsSetup: status === 'needsSetup' };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

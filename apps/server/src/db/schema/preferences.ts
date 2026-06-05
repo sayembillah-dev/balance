@@ -22,6 +22,8 @@ export const settings = pgTable('settings', {
   loginAlerts: boolean('login_alerts').notNull().default(true),
   biometric: boolean('biometric').notNull().default(false),
   weeklyEmail: boolean('weekly_email').notNull().default(false),
+  // Whether the user has completed (or skipped) the first-run onboarding flow.
+  onboarded: boolean('onboarded').notNull().default(false),
   ...timestamps,
 });
 

@@ -38,7 +38,7 @@ const CAT_LIST = () => window.BAL.catNames();
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
-const money = (n) => `${n < 0 ? '−' : ''}₹${grp(n)}`;
+const money = (n) => window.BAL.fmt(n);
 const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 
@@ -81,7 +81,7 @@ function AccountModal({ initial, onSave, onClose }) {
               </select>
             </div>
             <div className="field">
-              <label>Opening balance (₹)</label>
+              <label>Opening balance ({window.BAL.sym()})</label>
               <input type="number" value={f.opening} onChange={(e) => set('opening', e.target.value)} />
             </div>
           </div>
@@ -177,7 +177,7 @@ function TxnList({ txns }) {
               <div className="tx-mid"><b>{t.merchant}</b>
                 <div className="tx-sub"><i style={{ background: CATS_COLOR(t.category) }} />{t.category} · {t.mode}</div></div>
               <div className="tx-right">
-                <span className={`tx-amt ${t.type}`}>{signOf(t)}₹{grp(t.amount)}</span>
+                <span className={`tx-amt ${t.type}`}>{signOf(t)}{window.BAL.fmt(t.amount)}</span>
                 <span className="when">{fmtDate(t.date)}</span></div>
             </div>
           ))}
@@ -193,7 +193,7 @@ function TxnList({ txns }) {
                   <td><span className="cat-pill"><i style={{ background: CATS_COLOR(t.category) }} />{t.category}</span></td>
                   <td><span className="mode-tag">{t.mode}</span></td>
                   <td><span className="tx-date">{fmtDate(t.date)}</span></td>
-                  <td className={`tx-amt ${t.type}`}>{signOf(t)}₹{grp(t.amount)}</td>
+                  <td className={`tx-amt ${t.type}`}>{signOf(t)}{window.BAL.fmt(t.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -284,8 +284,8 @@ export default function Accounts() {
         </div>
         <div className="acct-sum">
           <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.wallet2} /></span>Balance</div><b className={balance < 0 ? 'out' : ''}>{money(balance)}</b></div>
-          <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.in} /></span>Income</div><b className="in">₹{grp(s.income)}</b></div>
-          <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.out} /></span>Spent</div><b className="out">₹{grp(s.spent)}</b></div>
+          <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.in} /></span>Income</div><b className="in">{window.BAL.fmt(s.income)}</b></div>
+          <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.out} /></span>Spent</div><b className="out">{window.BAL.fmt(s.spent)}</b></div>
           <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.list} /></span>Transactions</div><b>{s.count}</b></div>
         </div>
         <TxnList txns={list} />
@@ -308,8 +308,8 @@ export default function Accounts() {
 
       <div className="acct-sum">
         <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.wallet2} /></span>Net balance</div><b className={totals.balance < 0 ? 'out' : ''}>{money(totals.balance)}</b></div>
-        <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.in} /></span>Total income</div><b className="in">₹{grp(totals.income)}</b></div>
-        <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.out} /></span>Total spent</div><b className="out">₹{grp(totals.spent)}</b></div>
+        <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.in} /></span>Total income</div><b className="in">{window.BAL.fmt(totals.income)}</b></div>
+        <div className="tile"><div className="tlab"><span className="tic"><AIco d={AI.out} /></span>Total spent</div><b className="out">{window.BAL.fmt(totals.spent)}</b></div>
       </div>
 
       <div className="acct-grid">
@@ -331,8 +331,8 @@ export default function Accounts() {
               </div>
               <div className="acct-bal"><small>Current balance</small><b className={bal < 0 ? 'neg' : ''}>{money(bal)}</b></div>
               <div className="acct-foot">
-                <div className="m"><span>Income</span><b className="in">₹{grp(s.income)}</b></div>
-                <div className="m"><span>Spent</span><b className="out">₹{grp(s.spent)}</b></div>
+                <div className="m"><span>Income</span><b className="in">{window.BAL.fmt(s.income)}</b></div>
+                <div className="m"><span>Spent</span><b className="out">{window.BAL.fmt(s.spent)}</b></div>
                 <div className="m"><span>Txns</span><b>{s.count}</b></div>
               </div>
             </div>

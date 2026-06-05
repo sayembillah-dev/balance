@@ -90,13 +90,13 @@ function Donut({ segs }) {
     <div className="wg-body">
       <div className="donut-wrap">
         <div className="donut" style={{ background: `conic-gradient(${stops})` }}>
-          <div className="donut-c"><b>₹{(total / 1000).toFixed(1)}k</b><span>spent</span></div>
+          <div className="donut-c"><b>{window.BAL.fmt(total)}</b><span>spent</span></div>
         </div>
         <div className="legend">
           {segs.map((s, i) => (
             <div className="legend-row" key={s.label}>
               <i style={{ background: CAT[i % CAT.length] }} />
-              <span>{s.label}</span><b>₹{s.v.toLocaleString('en-IN')}</b>
+              <span>{s.label}</span><b>{window.BAL.fmt(s.v)}</b>
             </div>
           ))}
         </div>
@@ -178,7 +178,7 @@ function Quick() {
 
 // ---------- live data ----------
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const inr = (n) => window.BAL.fmt(n);
 const ym = (d) => (d || '').slice(0, 7);
 const fmtShort = (d) => { const x = new Date(d); return isNaN(x) ? '' : `${x.getDate()} ${MON[x.getMonth()]}`; };
 

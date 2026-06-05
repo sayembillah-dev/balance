@@ -104,6 +104,7 @@ export const settingsUpdateSchema = z.object({
   loginAlerts: z.boolean().optional(),
   biometric: z.boolean().optional(),
   weeklyEmail: z.boolean().optional(),
+  onboarded: z.boolean().optional(),
 });
 
 export const profileUpdateSchema = z.object({

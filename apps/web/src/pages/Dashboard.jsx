@@ -166,11 +166,18 @@ function WList({ rows }) {
 }
 
 function Quick() {
-  const acts = [['send', 'Send'], ['request', 'Request'], ['plus', 'Add money'], ['card', 'Pay bill']];
+  const addTxn = (tab) => window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { tab } }));
+  const goto = (page) => window.dispatchEvent(new CustomEvent('balance:goto', { detail: page }));
+  const acts = [
+    ['send', 'Send', () => addTxn('transfer')],
+    ['request', 'Request', () => goto('pay')],
+    ['plus', 'Add money', () => addTxn('income')],
+    ['card', 'Pay bill', () => addTxn('expense')],
+  ];
   return (
     <div className="wg-body">
       <div className="quick">
-        {acts.map(([k, l]) => <button key={l} type="button"><WIcon k={k} />{l}</button>)}
+        {acts.map(([k, l, onClick]) => <button key={l} type="button" onClick={onClick}><WIcon k={k} />{l}</button>)}
       </div>
     </div>
   );

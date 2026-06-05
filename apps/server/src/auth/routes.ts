@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { eq } from 'drizzle-orm';
 import {
   loginSchema,
@@ -78,13 +79,30 @@ async function sendAuth(req: Request, res: Response, user: AuthUser, status = 20
 
 export const authRouter: Router = Router();
 
+// Brute-force protection on credential endpoints. Memory store is fine for a
+// single-instance self-host. Not applied to refresh/logout/bootstrap-status.
+const rateLimited = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many attempts — please try again later.' } },
+});
+const resetLimited = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 6,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests — please try again later.' } },
+});
+
 // Whether the instance still needs its first admin (drives the setup wizard).
 authRouter.get('/bootstrap-status', async (_req, res) => {
   res.json({ needsSetup: (await userCount()) === 0 });
 });
 
 // One-time first-admin creation. Only reachable while there are zero users.
-authRouter.post('/setup', async (req, res) => {
+authRouter.post('/setup', rateLimited, async (req, res) => {
   if ((await userCount()) > 0) {
     throw new AppError('SETUP_ALREADY_DONE', 'Setup has already been completed');
   }
@@ -93,7 +111,7 @@ authRouter.post('/setup', async (req, res) => {
   await sendAuth(req, res, user, 201);
 });
 
-authRouter.post('/signup', async (req, res) => {
+authRouter.post('/signup', rateLimited, async (req, res) => {
   const input = signupSchema.parse(req.body);
 
   // Invite path takes precedence; otherwise require open signups to be enabled.
@@ -118,7 +136,7 @@ authRouter.post('/signup', async (req, res) => {
   await sendAuth(req, res, user, 201);
 });
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', rateLimited, async (req, res) => {
   const input = loginSchema.parse(req.body);
   const user = await authenticate(input.email, input.password);
   await sendAuth(req, res, user);
@@ -151,7 +169,7 @@ authRouter.post('/logout', async (req, res) => {
   res.json({ ok: true });
 });
 
-authRouter.post('/password-reset/request', async (req, res) => {
+authRouter.post('/password-reset/request', resetLimited, async (req, res) => {
   const { email } = passwordResetRequestSchema.parse(req.body);
   const token = await createPasswordReset(email);
   // TODO(Phase 9): email the link when SMTP is configured. For now, surface it
@@ -162,7 +180,7 @@ authRouter.post('/password-reset/request', async (req, res) => {
   res.json({ ok: true }); // identical response whether or not the email exists
 });
 
-authRouter.post('/password-reset/confirm', async (req, res) => {
+authRouter.post('/password-reset/confirm', rateLimited, async (req, res) => {
   const { token, password } = passwordResetConfirmSchema.parse(req.body);
   await confirmPasswordReset(token, password);
   res.json({ ok: true });

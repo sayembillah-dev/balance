@@ -15,6 +15,13 @@
       "when": 1780650542827,
       "tag": "0001_eager_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780652358335,
+      "tag": "0002_deep_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,9 @@
-/* Balance — Sign in / Sign up / first-run Setup. Branded auth screen wired to
-   the real auth API via the AuthProvider. */
+/* Balance — Sign in / Sign up / first-run Setup / Forgot + Reset password.
+   Branded auth screen wired to the real auth API via the AuthProvider. */
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import { apiPost } from '../lib/api.js';
 
 const Logo = ({ stroke = '#fff' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -14,52 +15,72 @@ export default function Auth() {
   const { status, login, signup, setup } = useAuth();
   const [params] = useSearchParams();
   const invite = params.get('invite') || '';
+  const resetToken = params.get('reset') || '';
 
   const isSetup = status === 'needsSetup';
   const [mode, setMode] = useState(
     isSetup || params.get('mode') === 'signup' || invite ? 'signup' : 'signin',
   );
-  const wantsName = isSetup || mode === 'signup';
+  const [resetDone, setResetDone] = useState(false);
+
+  // The active view. A ?reset=token link shows the "set new password" form.
+  const view = isSetup ? 'setup' : (resetToken && !resetDone) ? 'reset' : mode;
+  const showName = view === 'setup' || view === 'signup';
+  const showEmail = view !== 'reset';
+  const showPassword = view !== 'forgot';
+  const newPassword = view === 'setup' || view === 'signup' || view === 'reset';
 
   const [showPw, setShowPw] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // data-mode drives the only-signin / only-signup CSS visibility.
-  const dataMode = wantsName ? 'signup' : 'signin';
+  const dataMode = showName ? 'signup' : 'signin';
 
   const submit = async (e) => {
     e.preventDefault();
-    // Read straight from the form, not just React state: browser autofill can
-    // populate the inputs without firing onChange, leaving state stale/empty.
     const fd = new FormData(e.currentTarget);
     const emailV = (fd.get('email') ?? email ?? '').toString().trim();
     const passwordV = (fd.get('password') ?? password ?? '').toString();
     const nameV = (fd.get('name') ?? name ?? '').toString().trim();
 
-    setError('');
-    setBusy(true);
+    setError(''); setNotice(''); setBusy(true);
     try {
-      if (isSetup) await setup({ email: emailV, password: passwordV, name: nameV });
-      else if (mode === 'signup') await signup({ email: emailV, password: passwordV, name: nameV, invite: invite || undefined });
-      else await login(emailV, passwordV);
-      // On success the AuthProvider flips status → the Gate swaps to the app.
+      if (view === 'reset') {
+        await apiPost('/auth/password-reset/confirm', { token: resetToken, password: passwordV });
+        setResetDone(true); setMode('signin'); setPassword('');
+        setNotice('Password updated — please sign in with your new password.');
+        setBusy(false);
+      } else if (view === 'forgot') {
+        await apiPost('/auth/password-reset/request', { email: emailV });
+        setNotice("If an account exists for that email, a reset link has been created. On a self-hosted instance without email configured, the link appears in your server logs.");
+        setBusy(false);
+      } else if (view === 'setup') {
+        await setup({ email: emailV, password: passwordV, name: nameV });
+      } else if (view === 'signup') {
+        await signup({ email: emailV, password: passwordV, name: nameV, invite: invite || undefined });
+      } else {
+        await login(emailV, passwordV);
+      }
+      // On auth success the AuthProvider flips status → the Gate swaps to the app.
     } catch (err) {
       setError(err?.message || 'Something went wrong. Please try again.');
       setBusy(false);
     }
   };
 
-  const headTitle = isSetup ? 'Set up your instance' : mode === 'signup' ? 'Create your account' : 'Welcome back';
-  const headSub = isSetup
-    ? 'Create the admin account for this Balance instance.'
-    : mode === 'signup'
-      ? 'Start managing your money in minutes.'
-      : 'Sign in to pick up where you left off.';
-  const cta = isSetup ? 'Create admin account' : mode === 'signup' ? 'Create account' : 'Sign in';
+  const COPY = {
+    setup: { h: 'Set up your instance', s: 'Create the admin account for this Balance instance.', cta: 'Create admin account' },
+    signup: { h: 'Create your account', s: 'Start managing your money in minutes.', cta: 'Create account' },
+    signin: { h: 'Welcome back', s: 'Sign in to pick up where you left off.', cta: 'Sign in' },
+    forgot: { h: 'Reset your password', s: "Enter your email and we'll create a reset link.", cta: 'Send reset link' },
+    reset: { h: 'Choose a new password', s: 'Enter a new password for your account.', cta: 'Set new password' },
+  }[view];
+
+  const goto = (m) => { setError(''); setNotice(''); setMode(m); };
 
   return (
     <div className="auth" data-mode={dataMode}>
@@ -94,11 +115,11 @@ export default function Auth() {
             <b>Balance</b>
           </div>
 
-          <h2 className="fp-h">{headTitle}</h2>
-          <p className="fp-sub">{headSub}</p>
+          <h2 className="fp-h">{COPY.h}</h2>
+          <p className="fp-sub">{COPY.s}</p>
 
           <form className="form" onSubmit={submit}>
-            {wantsName && (
+            {showName && (
               <div className="field">
                 <label htmlFor="name">Full name</label>
                 <div className="input">
@@ -108,44 +129,51 @@ export default function Auth() {
               </div>
             )}
 
-            <div className="field">
-              <label htmlFor="email">Email address</label>
-              <div className="input">
-                <input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email"
-                  value={email} onChange={(e) => setEmail(e.target.value)} required />
+            {showEmail && (
+              <div className="field">
+                <label htmlFor="email">Email address</label>
+                <div className="input">
+                  <input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email"
+                    value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
               </div>
-            </div>
-
-            <div className="field">
-              <label htmlFor="password">Password</label>
-              <div className="input">
-                <input id="password" name="password" type={showPw ? 'text' : 'password'} placeholder="••••••••"
-                  autoComplete={wantsName ? 'new-password' : 'current-password'}
-                  value={password} onChange={(e) => setPassword(e.target.value)} required minLength={wantsName ? 8 : undefined} />
-                <button type="button" className="toggle-pw" aria-label="Show password" onClick={() => setShowPw((v) => !v)} style={showPw ? { color: 'var(--primary-ink)' } : undefined}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <p style={{ color: '#dc2626', fontSize: 14, margin: '2px 0 0' }}>{error}</p>
             )}
 
+            {showPassword && (
+              <div className="field">
+                <label htmlFor="password">{view === 'reset' ? 'New password' : 'Password'}</label>
+                <div className="input">
+                  <input id="password" name="password" type={showPw ? 'text' : 'password'} placeholder="••••••••"
+                    autoComplete={newPassword ? 'new-password' : 'current-password'}
+                    value={password} onChange={(e) => setPassword(e.target.value)} required minLength={newPassword ? 8 : undefined} />
+                  <button type="button" className="toggle-pw" aria-label="Show password" onClick={() => setShowPw((v) => !v)} style={showPw ? { color: 'var(--primary-ink)' } : undefined}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {view === 'signin' && (
+              <div style={{ textAlign: 'right', marginTop: -4 }}>
+                <a className="link" style={{ cursor: 'pointer', fontSize: 14 }} onClick={() => goto('forgot')}>Forgot password?</a>
+              </div>
+            )}
+
+            {error && <p style={{ color: '#dc2626', fontSize: 14, margin: '2px 0 0' }}>{error}</p>}
+            {notice && <p style={{ color: 'var(--primary-ink, #4338ca)', fontSize: 14, margin: '2px 0 0' }}>{notice}</p>}
+
             <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? 'Please wait…' : cta}
+              {busy ? 'Please wait…' : COPY.cta}
             </button>
           </form>
 
           {!isSetup && (
             <div className="foot">
-              {mode === 'signin' ? (
-                <span>Don't have an account? <a onClick={() => { setError(''); setMode('signup'); }}>Sign up</a></span>
-              ) : (
-                <span>Already have an account? <a onClick={() => { setError(''); setMode('signin'); }}>Sign in</a></span>
-              )}
+              {view === 'signin' && <span>Don't have an account? <a onClick={() => goto('signup')}>Sign up</a></span>}
+              {view === 'signup' && <span>Already have an account? <a onClick={() => goto('signin')}>Sign in</a></span>}
+              {(view === 'forgot' || view === 'reset') && <span><a onClick={() => goto('signin')}>← Back to sign in</a></span>}
             </div>
           )}
         </div>

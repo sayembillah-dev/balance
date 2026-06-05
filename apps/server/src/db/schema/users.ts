@@ -6,6 +6,7 @@ import {
   timestamp,
   jsonb,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { pk, timestamps } from '../columns.js';
 import { userRoleEnum } from '../enums.js';
@@ -34,7 +35,7 @@ export const users = pgTable(
     avatarUploadId: uuid('avatar_upload_id'),
     ...timestamps,
   },
-  (t) => [index('users_email_uq').on(t.email)],
+  (t) => [uniqueIndex('users_email_uq').on(t.email)],
 );
 
 /**
@@ -59,7 +60,7 @@ export const refreshTokens = pgTable(
     createdAt: timestamps.createdAt,
   },
   (t) => [
-    index('refresh_token_hash_uq').on(t.tokenHash),
+    uniqueIndex('refresh_token_hash_uq').on(t.tokenHash),
     index('refresh_user_idx').on(t.userId),
     index('refresh_family_idx').on(t.familyId),
   ],
@@ -78,7 +79,7 @@ export const passwordResetTokens = pgTable(
     createdAt: timestamps.createdAt,
   },
   (t) => [
-    index('pwreset_token_hash_uq').on(t.tokenHash),
+    uniqueIndex('pwreset_token_hash_uq').on(t.tokenHash),
     index('pwreset_user_idx').on(t.userId),
   ],
 );
@@ -100,7 +101,7 @@ export const invitations = pgTable(
     acceptedById: uuid('accepted_by_id'),
     createdAt: timestamps.createdAt,
   },
-  (t) => [index('invite_token_hash_uq').on(t.tokenHash)],
+  (t) => [uniqueIndex('invite_token_hash_uq').on(t.tokenHash)],
 );
 
 /** Instance-wide key/value settings (e.g. `allow_open_signups`, SMTP config,

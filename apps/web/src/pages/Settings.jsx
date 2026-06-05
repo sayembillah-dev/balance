@@ -2,7 +2,8 @@
    Internal tabs; Preferences & Logic is the showcase.
    Draft/Save/Cancel persisted via the API (profile → /me, prefs → /me/settings). */
 import React, { useState, useRef, useEffect } from 'react';
-import { apiUpload, apiObjectUrl } from '../lib/api.js';
+import { apiUpload, apiObjectUrl, apiPost, apiDelete } from '../lib/api.js';
+import { useAuth } from '../lib/auth.jsx';
 
 const G = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -58,7 +59,7 @@ function ProfilePanel({ d, set }) {
       </div>
       <div className="set-group">
         <Row title="Full name"><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink)' }} value={d.name} onChange={(e) => set('name', e.target.value)} /></Row>
-        <Row title="Email address"><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink)' }} value={d.email} onChange={(e) => set('email', e.target.value)} /></Row>
+        <Row title="Email address" sub="Your sign-in email can't be changed here."><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink-3)' }} value={d.email} readOnly disabled /></Row>
         <Row title="Phone"><input className="txn-field" style={{ minWidth: 240, height: 42, color: 'var(--ink)' }} value={d.phone} onChange={(e) => set('phone', e.target.value)} /></Row>
         <Row title="Time zone">
           <select className="txn-field" value={d.timezone} onChange={(e) => set('timezone', e.target.value)}>
@@ -116,61 +117,114 @@ function PrefsPanel({ d, set }) {
   );
 }
 
-function SecurityPanel({ d, set }) {
+function SecurityPanel({ d, set, a }) {
   return (
     <>
       <div className="set-group-t">Authentication</div>
       <div className="set-group">
-        <Row title="Password" sub="Last changed 3 months ago."><button className="btn-ghost"><G d={GI.key} />Change password</button></Row>
+        <Row title="Password" sub="Change the password you sign in with."><button className="btn-ghost" onClick={a.changePassword}><G d={GI.key} />Change password</button></Row>
         <Row title="Two-factor authentication" sub="Require a verification code at login for extra security."><Switch on={d.twoFactor} onClick={() => set('twoFactor', !d.twoFactor)} /></Row>
         <Row title="Biometric unlock" sub="Use Face ID / fingerprint to open the app on supported devices."><Switch on={d.biometric} onClick={() => set('biometric', !d.biometric)} /></Row>
       </div>
-      <div className="set-group-t">Alerts</div>
+      <div className="set-group-t">Sessions</div>
       <div className="set-group">
-        <Row title="Login alerts" sub="Email me whenever a new device signs in."><Switch on={d.loginAlerts} onClick={() => set('loginAlerts', !d.loginAlerts)} /></Row>
-        <Row title="Active sessions" sub="iPhone 15 · Chrome on Mac · 2 devices."><button className="btn-ghost">Manage</button></Row>
+        <Row title="Sign out everywhere" sub="End every active session, including this one. You'll sign in again."><button className="btn-ghost" onClick={a.signOutAll}>Sign out all devices</button></Row>
       </div>
       <div className="set-group">
-        <Row danger title="Delete account" sub="Permanently remove your account and all data. This cannot be undone."><button className="btn-ghost" style={{ color: '#c02626', borderColor: 'color-mix(in oklab,#e23b3b 30%,#fff)' }}>Delete</button></Row>
+        <Row danger title="Delete account" sub="Permanently remove your account and all data. This cannot be undone."><button className="btn-ghost" style={{ color: '#c02626', borderColor: 'color-mix(in oklab,#e23b3b 30%,#fff)' }} onClick={a.deleteAccount}>Delete</button></Row>
       </div>
     </>
   );
 }
 
-function DataPanel({ d, set }) {
-  const integ = (logo, bg, name, meta, key) => (
+function DataPanel({ a }) {
+  // Integrations that need external services aren't built yet — shown as upcoming
+  // rather than as dead toggles.
+  const integ = (logo, bg, name, meta) => (
     <div className="integ">
       <span className="ilogo" style={{ background: bg }}>{logo}</span>
       <div className="imeta"><b>{name}</b><span>{meta}</span></div>
-      <span className={`conn-pill ${d[key] ? 'on' : 'off'}`}>{d[key] ? 'Connected' : 'Not connected'}</span>
-      <Switch on={d[key]} onClick={() => set(key, !d[key])} />
+      <span className="conn-pill off">Coming soon</span>
     </div>
   );
   return (
     <>
       <div className="set-group-t">Connections</div>
       <div className="set-group">
-        {integ('🏦', '#2f6fe0', 'Bank sync', 'Auto-import transactions from linked accounts', 'sync')}
-        {integ('▲', '#15803d', 'Google Drive backup', 'Back up your data every night', 'googleDrive')}
-      </div>
-      <div className="set-group-t">Notifications</div>
-      <div className="set-group">
-        <Row title="Weekly summary email" sub="A digest of your spending every Monday morning."><Switch on={d.weeklyEmail} onClick={() => set('weeklyEmail', !d.weeklyEmail)} /></Row>
+        {integ('🏦', '#2f6fe0', 'Bank sync', 'Auto-import transactions from linked accounts')}
+        {integ('▲', '#15803d', 'Google Drive backup', 'Back up your data every night')}
       </div>
       <div className="set-group-t">Your data</div>
       <div className="set-group">
-        <Row title="Export data" sub="Download all your transactions, accounts and budgets as CSV."><button className="btn-ghost"><G d={GI.download} />Export CSV</button></Row>
-        <Row title="Import data" sub="Bring in transactions from another app or a bank statement."><button className="btn-ghost">Import</button></Row>
+        <Row title="Export transactions" sub="Download all your transactions as a CSV file."><button className="btn-ghost" onClick={a.exportCsv}><G d={GI.download} />Export CSV</button></Row>
       </div>
     </>
   );
 }
 
+function ChangePasswordModal({ onClose, onDone }) {
+  const [cur, setCur] = useState('');
+  const [nw, setNw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr('');
+    if (nw.length < 8) { setErr('New password must be at least 8 characters.'); return; }
+    setBusy(true);
+    try { await apiPost('/me/password', { currentPassword: cur, newPassword: nw }); onDone(); }
+    catch (ex) { setErr(ex?.message || 'Could not change password.'); setBusy(false); }
+  };
+  return (
+    <div className="lib-overlay" onMouseDown={onClose}>
+      <div className="lib" style={{ maxWidth: 420 }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="lib-head"><div><h3>Change password</h3><p>You'll be signed out after changing it.</p></div><button className="lib-x" onClick={onClose}>×</button></div>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '6px 2px 2px' }}>
+          <input className="txn-field" type="password" placeholder="Current password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} autoFocus />
+          <input className="txn-field" type="password" placeholder="New password (min 8 characters)" autoComplete="new-password" value={nw} onChange={(e) => setNw(e.target.value)} />
+          {err && <p style={{ color: '#dc2626', margin: 0, fontSize: 14 }}>{err}</p>}
+          <button className="btn-primary" disabled={busy || !cur || !nw}>{busy ? 'Saving…' : 'Update password'}</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
+  const { logout } = useAuth();
   const [saved, setSaved] = useState(load());
   const [d, setD] = useState(saved);
   const [tab, setTab] = useState('prefs');
   const [justSaved, setJustSaved] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+
+  const actions = {
+    changePassword: () => setPwOpen(true),
+    signOutAll: async () => {
+      if (!window.confirm('Sign out of all devices? You will need to sign in again.')) return;
+      try { await apiPost('/me/logout-all', {}); } catch { /* ignore */ }
+      await logout();
+    },
+    deleteAccount: async () => {
+      if (!window.confirm('Permanently delete your account and ALL your data? This cannot be undone.')) return;
+      if (window.prompt('Type DELETE to confirm:') !== 'DELETE') return;
+      try { await apiDelete('/me'); await logout(); }
+      catch (e) { window.alert(e?.message || 'Could not delete account.'); }
+    },
+    exportCsv: () => {
+      const txns = window.BAL.loadTxns();
+      const accts = window.BAL.loadAccounts();
+      const nameOf = (id) => (accts.find((x) => x.id === id) || {}).name || '';
+      const head = ['Date', 'Type', 'Merchant', 'Category', 'Subcategory', 'Mode', 'Amount', 'Account', 'From', 'To'];
+      const rows = [head, ...txns.map((t) => [t.date, t.type, t.merchant || '', t.category || '', t.subcategory || '', t.mode || '', t.amount, nameOf(t.account), nameOf(t.fromAccount), nameOf(t.toAccount)])];
+      const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url; link.download = `balance-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+  };
 
   const set = (k, v) => { setD((p) => ({ ...p, [k]: v })); setJustSaved(false); };
   const dirty = JSON.stringify(d) !== JSON.stringify(saved);
@@ -214,7 +268,7 @@ export default function Settings() {
           <div><div className="set-h2">{cur.label}</div><div className="set-h2-d">{
             { profile: 'Your personal details and how we reach you.', prefs: 'Currency, budgeting logic and privacy controls.', security: 'Keep your account safe and private.', data: 'Connections, backups and exports.' }[tab]
           }</div></div>
-          <Panel d={d} set={set} />
+          <Panel d={d} set={set} a={actions} />
           <div className="set-foot">
             {justSaved && <span className="saved-note"><G d={GI.check} />All changes saved</span>}
             <button className="btn-ghost" onClick={cancel} disabled={!dirty} style={dirty ? null : { opacity: 0.5, cursor: 'default' }}>Cancel</button>
@@ -222,6 +276,7 @@ export default function Settings() {
           </div>
         </div>
       </div>
+      {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} onDone={async () => { setPwOpen(false); window.alert('Password changed. Please sign in again.'); await logout(); }} />}
     </div>
   );
 }

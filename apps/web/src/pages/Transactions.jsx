@@ -81,6 +81,13 @@ function Transactions() {
     return () => { window.removeEventListener('balance:txn-changed', h); window.removeEventListener('balance:page', h); };
   }, []);
 
+  // Top-bar search jumps here and applies its term.
+  useEffect(() => {
+    const h = (e) => setQuery(e.detail || '');
+    window.addEventListener('balance:search', h);
+    return () => window.removeEventListener('balance:search', h);
+  }, []);
+
   useEffect(() => {
     const el = rootRef.current; if (!el) return;
     const measure = () => { if (el.clientWidth) setCards(el.clientWidth < 680); };

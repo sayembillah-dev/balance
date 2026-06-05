@@ -116,6 +116,13 @@ export default function App() {
     return () => window.removeEventListener('balance:currency', h);
   }, []);
 
+  // Global "navigate to page" event, used by widgets/components outside the shell.
+  useEffect(() => {
+    const h = (e) => { if (PAGES[e.detail]) setPage(e.detail); };
+    window.addEventListener('balance:goto', h);
+    return () => window.removeEventListener('balance:goto', h);
+  }, [setPage]);
+
   const toggleSidebar = () => {
     if (window.matchMedia('(max-width: 760px)').matches) { setNavOpen(false); return; }
     setCollapsed((c) => { const n = !c; localStorage.setItem('balance.collapsed', n ? '1' : '0'); return n; });
@@ -203,7 +210,12 @@ export default function App() {
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
-                <input type="text" placeholder="Search expenses, transactions, cards" />
+                <input type="text" placeholder="Search transactions…" onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  const q = e.currentTarget.value.trim();
+                  setPage('transactions');
+                  window.dispatchEvent(new CustomEvent('balance:search', { detail: q }));
+                }} />
               </div>
 
               <button className="topbar-add" onClick={openNewTxn}>
@@ -217,7 +229,7 @@ export default function App() {
                 </svg>
               </button>
 
-              <div className="avatar" style={avatarUrl ? { backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : undefined}>{avatarUrl ? '' : initial}</div>
+              <div className="avatar" title="Settings" style={{ cursor: 'pointer', ...(avatarUrl ? { backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}) }} onClick={() => setPage('settings')}>{avatarUrl ? '' : initial}</div>
             </div>
           </header>
 

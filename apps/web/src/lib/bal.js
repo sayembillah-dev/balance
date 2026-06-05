@@ -219,26 +219,40 @@ async function refillAccounts() { accounts = (await apiGet('/accounts')).map(ada
 async function refillTags() { tags = (await apiGet('/tags')).map(adaptTag); emitChanged(); }
 async function refillCategories() { categories = (await apiGet('/categories')).map(adaptCategory); rebuildCatMaps(); emitChanged(); }
 async function refillPresets() { presets = (await apiGet('/presets')).map(adaptPreset); emitChanged(); }
+// The pages operate on the full transaction list, so page through the API
+// (server caps a page at 100) following nextCursor until exhausted.
+async function fetchAllTxns() {
+  const out = [];
+  let cursor = null;
+  do {
+    const qs = new URLSearchParams({ limit: '100', sort: 'date', dir: 'desc' });
+    if (cursor) qs.set('cursor', cursor);
+    const page = await apiGet(`/transactions?${qs.toString()}`);
+    out.push(...(page.items || []));
+    cursor = page.nextCursor;
+  } while (cursor);
+  return out;
+}
+
 async function refillTxns() {
-  const page = await apiGet('/transactions?limit=200&sort=date&dir=desc');
-  txns = (page.items || []).map(adaptTxn);
+  txns = (await fetchAllTxns()).map(adaptTxn);
   emitChanged();
 }
 
 async function hydrate() {
-  const [accts, cats, tg, pres, txnPage] = await Promise.all([
+  const [accts, cats, tg, pres, allTxns] = await Promise.all([
     apiGet('/accounts'),
     apiGet('/categories'),
     apiGet('/tags'),
     apiGet('/presets'),
-    apiGet('/transactions?limit=200&sort=date&dir=desc'),
+    fetchAllTxns(),
   ]);
   categories = cats.map(adaptCategory);
   rebuildCatMaps();
   accounts = accts.map(adaptAccount);
   tags = tg.map(adaptTag);
   presets = pres.map(adaptPreset);
-  txns = (txnPage.items || []).map(adaptTxn);
+  txns = allTxns.map(adaptTxn);
   emitChanged();
 }
 

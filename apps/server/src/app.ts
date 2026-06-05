@@ -1,16 +1,20 @@
 import express, { type Express } from 'express';
+import cookieParser from 'cookie-parser';
 import { APP_NAME } from '@balance/shared';
 import { pool } from './db/client.js';
+import { authRouter } from './auth/routes.js';
+import { notFoundHandler, errorHandler } from './lib/errors.js';
 
 /**
  * Builds the Express app. Kept separate from the boot logic in index.ts so tests
  * can import the app without binding a port. Routers get mounted here as later
- * phases add them (auth, accounts, transactions, …).
+ * phases add them (accounts, transactions, …).
  */
 export function createApp(): Express {
   const app = express();
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // Liveness — process is up. No external dependencies checked.
   app.get('/healthz', (_req, res) => {
@@ -26,6 +30,12 @@ export function createApp(): Express {
       res.status(503).json({ ok: false, error: 'database unreachable' });
     }
   });
+
+  app.use('/api/v1/auth', authRouter);
+
+  // Must come last.
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 }

@@ -3,3 +3,4 @@ export const APP_NAME = 'Balance';
 export * from './ids.js';
 export * from './enums.js';
 export * from './money.js';
+export * from './schemas/auth.js';

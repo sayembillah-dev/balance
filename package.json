@@ -1,0 +1,31 @@
+{
+  "name": "balance",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Balance — self-hosted personal finance tracker (monorepo root)",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "build:shared": "tsc -b packages/shared",
+    "dev": "concurrently -n shared,server,web -c blue,green,magenta \"npm:dev:shared\" \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:shared": "tsc -b packages/shared --watch --preserveWatchOutput",
+    "dev:server": "npm run dev -w @balance/server",
+    "dev:web": "npm run dev -w @balance/web",
+    "build": "npm run build:shared && npm run build -w @balance/server && npm run build -w @balance/web",
+    "db:generate": "npm run db:generate -w @balance/server",
+    "db:migrate": "npm run db:migrate -w @balance/server",
+    "db:studio": "npm run db:studio -w @balance/server",
+    "test": "npm run test -w @balance/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

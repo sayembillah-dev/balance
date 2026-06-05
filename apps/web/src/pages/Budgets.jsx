@@ -1,0 +1,226 @@
+/* Balance — Budgets.
+   Budgets track either a Category or a Tag. Tag budgets choose Parallel
+   (count toward category too) or Isolated tracking. */
+import React, { useState, useEffect, useRef } from 'react';
+
+const B = ({ d, fill }) => (
+  <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
+       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    {d.map((p, i) => <path key={i} d={p} />)}
+  </svg>
+);
+const BI = {
+  plus:   ['M12 5v14', 'M5 12h14'],
+  x:      ['M6 6l12 12', 'M18 6 6 18'],
+  kebab:  ['M12 5.5h.01', 'M12 12h.01', 'M12 18.5h.01'],
+  edit:   ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'],
+  trash:  ['M4 7h16', 'M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2', 'M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'],
+  grid:   ['m12 3 9 5-9 5-9-5 9-5Z', 'm3 13 9 5 9-5'],
+  tag:    ['M3 7v5.2a2 2 0 0 0 .6 1.4l7 7a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8l-7-7A2 2 0 0 0 10.2 5H5a2 2 0 0 0-2 2Z', 'M7.5 9.5h.01'],
+  wallet: ['M3 7a2 2 0 0 1 2-2h12a1.5 1.5 0 0 1 1.5 1.5V7', 'M3 7v10a2 2 0 0 0 2 2h13a1.5 1.5 0 0 0 1.5-1.5V10A1.5 1.5 0 0 0 18 8.5H5a2 2 0 0 1-2-1.5'],
+};
+const STORE = 'balance.budgets.v1';
+const money = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const TIMEFRAMES = ['Monthly', 'Weekly', 'Yearly'];
+const catColor = (n) => window.BAL.catColor(n);
+
+const SEED = [
+  { id: 'b1', name: 'Groceries & Food', amount: 12000, timeframe: 'Monthly', track: 'category', category: 'Food' },
+  { id: 'b2', name: 'Shopping cap',      amount: 8000,  timeframe: 'Monthly', track: 'category', category: 'Shopping' },
+  { id: 'b3', name: "Wife's Allowance",  amount: 15000, timeframe: 'Monthly', track: 'tag', tagId: 't_personal', mode: 'parallel' },
+  { id: 'b4', name: 'Work (reimbursed)', amount: 10000, timeframe: 'Monthly', track: 'tag', tagId: 't_reimb', mode: 'isolated' },
+];
+const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) return s; } catch (e) {} return SEED.map((x) => ({ ...x })); };
+
+const spentFor = (b, txns) => txns.reduce((s, t) => {
+  if (t.type !== 'expense') return s;
+  if (b.track === 'category') return t.category === b.category ? s + t.amount : s;
+  return (t.tags || []).includes(b.tagId) ? s + t.amount : s;
+}, 0);
+
+const tagName = (tags, id) => { const t = tags.find((x) => x.id === id); return t ? t.name : 'tag'; };
+
+function BudgetModal({ initial, tags, cats, onSave, onClose }) {
+  const [f, setF] = useState(initial);
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const valid = f.name.trim() && f.amount && (f.track === 'category' ? f.category : f.tagId);
+  const save = () => { if (!valid) return; onSave({ ...f, name: f.name.trim(), amount: Math.abs(Number(f.amount)) }); };
+  return (
+    <div className="lib-overlay" onMouseDown={onClose}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()} style={{ width: 'min(500px,100%)' }}>
+        <div className="modal-head">
+          <h3>{initial.id ? 'Edit budget rule' : 'Create budget rule'}</h3>
+          <button className="lib-x" onClick={onClose} aria-label="Close"><B d={BI.x} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="field">
+            <label>Budget name</label>
+            <input autoFocus value={f.name} placeholder="e.g. Wife's Monthly Allowance" onChange={(e) => set('name', e.target.value)} />
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>Amount</label>
+              <div className="amt-field"><span className="cur">₹</span>
+                <input type="number" min="0" value={f.amount} placeholder="5,000" onChange={(e) => set('amount', e.target.value)} />
+              </div>
+            </div>
+            <div className="field">
+              <label>Timeframe</label>
+              <select value={f.timeframe} onChange={(e) => set('timeframe', e.target.value)}>
+                {TIMEFRAMES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="field">
+            <label>What are you tracking?</label>
+            <div className="track-seg">
+              <button className={f.track === 'category' ? 'on' : ''} onClick={() => set('track', 'category')}><B d={BI.grid} />By Category</button>
+              <button className={f.track === 'tag' ? 'on' : ''} onClick={() => set('track', 'tag')}><B d={BI.tag} />By Tag</button>
+            </div>
+          </div>
+
+          {f.track === 'category' ? (
+            <div className="field">
+              <label>Category</label>
+              <select value={f.category || ''} onChange={(e) => set('category', e.target.value)}>
+                <option value="">Choose a category…</option>
+                {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ) : (
+            <>
+              <div className="field">
+                <label>Tag</label>
+                <div className="tag-pick single">
+                  {tags.map((tg) => {
+                    const on = f.tagId === tg.id;
+                    return (
+                      <button type="button" key={tg.id} className="tag-opt"
+                        style={on ? { background: `color-mix(in oklab, ${tg.color} 15%, #fff 85%)`, color: `color-mix(in oklab, ${tg.color} 78%, #000 22%)`, borderColor: 'transparent' } : null}
+                        onClick={() => set('tagId', tg.id)}><i style={{ background: tg.color }} />{tg.name}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="field">
+                <label>How should this affect other budgets?</label>
+                <div className="radio-cards">
+                  <div className={`radio-card${f.mode === 'parallel' ? ' on' : ''}`} onClick={() => set('mode', 'parallel')}>
+                    <span className="radio-dot" />
+                    <div className="rc-txt">
+                      <b>Parallel tracking <span className="rec">Recommended</span></b>
+                      <p>Transactions count toward this tag budget AND their standard category at the same time (e.g. eating out with #{tagName(tags, f.tagId)} affects both Food and this budget).</p>
+                    </div>
+                  </div>
+                  <div className={`radio-card${f.mode === 'isolated' ? ' on' : ''}`} onClick={() => set('mode', 'isolated')}>
+                    <span className="radio-dot" />
+                    <div className="rc-txt">
+                      <b>Isolate tag expenses</b>
+                      <p>Any transaction with this tag bypasses your regular category budgets entirely and only counts here.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="modal-foot">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={save} disabled={!valid}>Save budget rule</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RowMenu({ onEdit, onDel, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => { const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); }; window.addEventListener('mousedown', h); return () => window.removeEventListener('mousedown', h); }, [onClose]);
+  return (
+    <div className="menu" ref={ref} style={{ top: 38 }}>
+      <button onClick={onEdit}><B d={BI.edit} />Edit</button>
+      <div className="sep" />
+      <button className="danger" onClick={onDel}><B d={BI.trash} />Delete</button>
+    </div>
+  );
+}
+
+export default function Budgets() {
+  const [budgets, setBudgets] = useState(load());
+  const [txns, setTxns] = useState(window.BAL.loadTxns());
+  const [editing, setEditing] = useState(null);
+  const [menu, setMenu] = useState(null);
+  const tags = window.BAL.loadTags();
+  const cats = window.BAL.loadCategories().filter((c) => c.type === 'expense').map((c) => c.name);
+
+  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(budgets)); }, [budgets]);
+  useEffect(() => {
+    const h = () => setTxns(window.BAL.loadTxns());
+    window.addEventListener('balance:txn-changed', h);
+    window.addEventListener('balance:page', h);
+    return () => { window.removeEventListener('balance:txn-changed', h); window.removeEventListener('balance:page', h); };
+  }, []);
+
+  const save = (b) => { setBudgets((all) => b.id ? all.map((x) => x.id === b.id ? b : x) : [...all, { ...b, id: 'b_' + Date.now() }]); setEditing(null); };
+  const del = (id) => { setBudgets((all) => all.filter((x) => x.id !== id)); setMenu(null); };
+
+  const totalBudget = budgets.reduce((s, b) => s + b.amount, 0);
+  const totalSpent = budgets.reduce((s, b) => s + spentFor(b, txns), 0);
+
+  const tagOf = (id) => tags.find((t) => t.id === id);
+  const blank = { name: '', amount: '', timeframe: 'Monthly', track: 'category', category: '', tagId: '', mode: 'parallel' };
+
+  return (
+    <div className="budgets">
+      <div className="txn-head">
+        <div><h2>Budgets</h2><p>Cap spending by category or by tag — {money(totalSpent)} of {money(totalBudget)} used</p></div>
+        <button className="btn-primary" onClick={() => setEditing(blank)}><B d={BI.plus} />New budget</button>
+      </div>
+
+      <div className="acct-sum">
+        <div className="tile"><div className="tlab"><span className="tic"><B d={BI.wallet} /></span>Total budgeted</div><b>{money(totalBudget)}</b></div>
+        <div className="tile"><div className="tlab"><span className="tic"><B d={BI.grid} /></span>Spent</div><b className={totalSpent > totalBudget ? 'out' : ''}>{money(totalSpent)}</b></div>
+        <div className="tile"><div className="tlab"><span className="tic"><B d={BI.tag} /></span>Remaining</div><b className={totalBudget - totalSpent < 0 ? 'out' : 'in'}>{money(Math.max(0, totalBudget - totalSpent))}</b></div>
+      </div>
+
+      <div className="bud-grid">
+        {budgets.map((b) => {
+          const spent = spentFor(b, txns);
+          const pct = Math.min(100, Math.round((spent / b.amount) * 100));
+          const over = spent > b.amount;
+          const isTag = b.track === 'tag';
+          const tg = isTag ? tagOf(b.tagId) : null;
+          const color = isTag ? (tg ? tg.color : '#888') : catColor(b.category);
+          const label = isTag ? (tg ? tg.name : 'tag') : b.category;
+          return (
+            <div className={`bud-card${over ? ' over' : ''}`} key={b.id}>
+              <button className={`kebab${menu === b.id ? ' open' : ''}`} aria-label="Budget actions" onClick={() => setMenu(menu === b.id ? null : b.id)}><B d={BI.kebab} fill /></button>
+              {menu === b.id && <RowMenu onEdit={() => { setEditing(b); setMenu(null); }} onDel={() => del(b.id)} onClose={() => setMenu(null)} />}
+              <div className="bud-top">
+                <span className="bud-ic" style={{ background: color }}>{isTag ? '#' : label.charAt(0)}</span>
+                <div className="bud-id">
+                  <b>{b.name}</b>
+                  <span className="tchip"><i style={{ background: color }} />{isTag ? '#' : ''}{label} · {b.timeframe}</span>
+                </div>
+              </div>
+              <div>
+                <div className="track"><i style={{ width: `${pct}%`, background: over ? '#c02626' : 'var(--primary)' }} /></div>
+                <div className="bud-figs">
+                  <span className="spent">{money(spent)} <small>/ {money(b.amount)}</small></span>
+                  <span className="pct">{pct}%</span>
+                </div>
+              </div>
+              <div className="bud-foot">
+                <span className={`left${over ? ' over' : ''}`}>{over ? `${money(spent - b.amount)} over` : `${money(b.amount - spent)} left`}</span>
+                {isTag && <span className={`mode-pill ${b.mode}`}>{b.mode === 'parallel' ? 'Parallel' : 'Isolated'}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {editing && <BudgetModal key={editing.id || 'new'} initial={editing} tags={tags} cats={cats} onSave={save} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}

@@ -172,9 +172,9 @@ function Modal({ open, onClose }) {
     let rec;
     if (tab === 'transfer') {
       const acName = (id) => (accts.find((a) => a.id === id) || {}).name || '';
-      rec = { id: editing ? editing.id : Date.now(), type: 'transfer', date: f.date, amount: Math.abs(Number(f.amount)), fromAccount: f.fromAccount, toAccount: f.toAccount, account: f.fromAccount, category: 'Transfer', mode: 'Transfer', merchant: f.merchant.trim() || `${acName(f.fromAccount)} → ${acName(f.toAccount)}`, tags: [] };
+      rec = { id: editing ? editing.id : window.BAL.newId(), type: 'transfer', date: f.date, amount: Math.abs(Number(f.amount)), fromAccount: f.fromAccount, toAccount: f.toAccount, account: f.fromAccount, category: 'Transfer', mode: 'Transfer', merchant: f.merchant.trim() || `${acName(f.fromAccount)} → ${acName(f.toAccount)}`, tags: [] };
     } else {
-      rec = { ...f, id: editing ? editing.id : Date.now(), amount: Math.abs(Number(f.amount)), merchant: f.merchant.trim(), tags: f.tags || [] };
+      rec = { ...f, id: editing ? editing.id : window.BAL.newId(), amount: Math.abs(Number(f.amount)), merchant: f.merchant.trim(), tags: f.tags || [] };
     }
     const all = window.BAL.loadTxns();
     window.BAL.saveTxns(editing ? all.map((x) => x.id === rec.id ? rec : x) : [rec, ...all]);
@@ -183,7 +183,7 @@ function Modal({ open, onClose }) {
   };
 
   const persistPresets = (list) => { setPresets(list); window.BAL.savePresets(list); };
-  const savePreset = (pr) => { persistPresets(pr.id ? presets.map((x) => x.id === pr.id ? pr : x) : [...presets, { ...pr, id: 'pr_' + Date.now() }]); setPresetEdit(null); };
+  const savePreset = (pr) => { persistPresets(pr.id ? presets.map((x) => x.id === pr.id ? pr : x) : [...presets, { ...pr, id: window.BAL.newId() }]); setPresetEdit(null); };
   const delPreset = (id) => persistPresets(presets.filter((x) => x.id !== id));
   const applyPreset = (pr) => {
     const base = blankFor(pr.type, accts);

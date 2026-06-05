@@ -1,23 +1,55 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-// Side-effect imports: install the shared data layer (window.BAL) and the
-// AI completion shim before any page module reads them.
+// Side-effect imports: install the data layer (window.BAL) and the AI shim
+// before any page module reads them.
 import './lib/bal.js'
 import './lib/claude.js'
 import './index.css'
 
 import App from './App.jsx'
 import Auth from './pages/Auth.jsx'
+import { AuthProvider, useAuth } from './lib/auth.jsx'
+
+function Splash() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100vh', color: 'var(--muted, #64748b)' }}>
+      Loading…
+    </div>
+  )
+}
+
+// Routes the user to auth vs the app based on session status. Setup + anonymous
+// both render <Auth/>, which adapts its copy based on whether setup is needed.
+function Gate() {
+  const { status } = useAuth()
+
+  if (status === 'loading') return <Splash />
+
+  if (status !== 'authed') {
+    return (
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      </Routes>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route path="/auth" element={<Navigate to="/" replace />} />
+      <Route path="/*" element={<App />} />
+    </Routes>
+  )
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/*" element={<App />} />
-      </Routes>
+      <AuthProvider>
+        <Gate />
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

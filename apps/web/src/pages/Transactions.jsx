@@ -26,8 +26,8 @@ const TI = {
 
 const catColor = (n) => window.BAL.catColor(n);
 const MODES = ['UPI', 'Card', 'Bank', 'Cash'];
-const ACCTS = window.BAL.loadAccounts();
-const ACCT_NAME = (id) => (ACCTS.find((a) => a.id === id) || {}).name || '—';
+// Live lookup (not captured at module load — caches fill after login/hydrate).
+const ACCT_NAME = (id) => (window.BAL.loadAccounts().find((a) => a.id === id) || {}).name || '—';
 const tagById = (id) => window.BAL.loadTags().find((t) => t.id === id);
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -122,7 +122,7 @@ function Transactions() {
   const onDup = useCallback((t) => {
     const all = window.BAL.loadTxns();
     const i = all.findIndex((x) => x.id === t.id);
-    const n = [...all]; n.splice(i < 0 ? 0 : i + 1, 0, { ...t, id: Date.now() });
+    const n = [...all]; n.splice(i < 0 ? 0 : i + 1, 0, { ...t, id: window.BAL.newId() });
     window.BAL.saveTxns(n); setTxns(n); setMenuId(null);
     window.dispatchEvent(new CustomEvent('balance:txn-changed'));
   }, []);

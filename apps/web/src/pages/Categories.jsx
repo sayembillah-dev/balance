@@ -155,10 +155,10 @@ export default function Categories() {
 
   useEffect(() => { window.BAL.saveCategories(cats); }, [cats]);
 
-  const newSub = (name) => ({ id: 's_' + Math.random().toString(36).slice(2, 9), name, hidden: false });
+  const newSub = (name) => ({ id: window.BAL.newId(), name, hidden: false });
   const saveCat = (c) => {
     setCats((all) => c.id ? all.map((x) => x.id === c.id ? { ...x, ...c } : x)
-      : [...all, { id: 'c_' + Date.now(), type, color: c.color, name: c.name, subs: [] }]);
+      : [...all, { id: window.BAL.newId(), type, color: c.color, name: c.name, subs: [] }]);
     setEditingCat(null);
   };
   const delCat = (id) => setCats((all) => all.filter((x) => x.id !== id));

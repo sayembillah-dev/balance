@@ -32,7 +32,8 @@ const tint = (hex) => `color-mix(in oklab, ${hex} 15%, #fff 85%)`;
 const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 const catColor = (n) => window.BAL.catColor(n);
 const loadTxns = () => window.BAL.loadTxns();
-const CAT_LIST = window.BAL.catNames();
+// Live (caches fill after login/hydrate, so don't capture at module load).
+const CAT_LIST = () => window.BAL.catNames();
 
 const tagStats = (id, txns) => {
   let income = 0, spent = 0, count = 0;
@@ -133,7 +134,7 @@ function TxnList({ txns }) {
         <div className="txn-search"><GIco d={GI.search} /><input value={query} placeholder="Search tagged transactions…" onChange={(e) => setQuery(e.target.value)} /></div>
         <div className="txn-seg">{[['all', 'All'], ['expense', 'Expense'], ['income', 'Income']].map(([v, l]) => <button key={v} className={type === v ? 'on' : ''} onClick={() => setType(v)}>{l}</button>)}</div>
         <select className="txn-field" value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="all">All categories</option>{CAT_LIST.map((c) => <option key={c} value={c}>{c}</option>)}
+          <option value="all">All categories</option>{CAT_LIST().map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       {slice.length === 0 ? (
@@ -204,7 +205,7 @@ export default function Tags() {
   }, []);
 
   const onSave = useCallback((t) => {
-    setTags((list) => t.id ? list.map((x) => x.id === t.id ? t : x) : [...list, { ...t, id: 't_' + Date.now() }]);
+    setTags((list) => t.id ? list.map((x) => x.id === t.id ? t : x) : [...list, { ...t, id: window.BAL.newId() }]);
     setEditing(null);
   }, []);
   const onDel = useCallback((id) => { setTags((list) => list.filter((x) => x.id !== id)); setMenuId(null); setSelId(null); }, []);

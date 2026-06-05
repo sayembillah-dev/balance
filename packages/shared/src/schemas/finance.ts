@@ -17,8 +17,14 @@ const currency = z.string().length(3);
 /** Money fields are integer minor units (paise/cents). */
 const minorAmount = z.number().int();
 
+// Clients may mint the row id (UUIDv7) so creates are idempotent and the future
+// offline app can assign ids without a round-trip. Optional; the DB generates
+// one when absent.
+const clientId = z.string().uuid().optional();
+
 // ── Accounts ────────────────────────────────────────────────────────────────
 export const accountCreateSchema = z.object({
+  id: clientId,
   name: z.string().trim().min(1).max(120),
   type: enumOf(ACCOUNT_TYPES),
   number: z.string().max(60).nullish(),
@@ -31,6 +37,7 @@ export type AccountCreate = z.infer<typeof accountCreateSchema>;
 
 // ── Tags ─────────────────────────────────────────────────────────────────────
 export const tagCreateSchema = z.object({
+  id: clientId,
   name: z.string().trim().min(1).max(60),
   color: z.string().min(1).max(32),
 });
@@ -38,6 +45,7 @@ export const tagUpdateSchema = tagCreateSchema.partial();
 
 // ── Categories (self-referential; parentId set = subcategory) ────────────────
 export const categoryCreateSchema = z.object({
+  id: clientId,
   kind: enumOf(CATEGORY_KINDS),
   name: z.string().trim().min(1).max(80),
   color: z.string().max(32).nullish(),
@@ -50,6 +58,7 @@ export const categoryUpdateSchema = categoryCreateSchema.partial();
 // ── Transactions ─────────────────────────────────────────────────────────────
 export const transactionCreateSchema = z
   .object({
+    id: clientId,
     type: enumOf(TRANSACTION_TYPES),
     date: isoDate,
     amountMinor: minorAmount.positive(),
@@ -119,6 +128,7 @@ export type TransactionQuery = z.infer<typeof transactionQuerySchema>;
 
 // ── Presets ──────────────────────────────────────────────────────────────────
 export const presetCreateSchema = z.object({
+  id: clientId,
   name: z.string().trim().min(1).max(120),
   type: z.enum(['expense', 'income']),
   merchant: z.string().max(200).nullish(),

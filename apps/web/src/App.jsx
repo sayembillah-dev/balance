@@ -3,6 +3,7 @@
    the global Add-transaction + AI chat hosts. */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './lib/auth.jsx';
 
 import Dashboard from './pages/Dashboard.jsx';
 import Transactions from './pages/Transactions.jsx';
@@ -79,6 +80,10 @@ export default function App() {
     window.dispatchEvent(new CustomEvent('balance:page', { detail: key }));
   }, []);
 
+  const { user, logout } = useAuth();
+  const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'there';
+  const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
+
   // fire the initial page event so pages that depend on it measure/refresh
   useEffect(() => { window.dispatchEvent(new CustomEvent('balance:page', { detail: active })); }, []); // eslint-disable-line
 
@@ -131,7 +136,7 @@ export default function App() {
           </nav>
 
           <div className="sidebar-foot">
-            <button className="nav-item logout" data-key="logout" onClick={() => navigate('/auth')}>
+            <button className="nav-item logout" data-key="logout" onClick={() => logout()}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <path d="M16 17l5-5-5-5" />
@@ -151,7 +156,7 @@ export default function App() {
               </svg>
             </button>
             <div className="greeting">
-              <h1>Hi, Ananya <span>👋</span></h1>
+              <h1>Hi, {firstName} <span>👋</span></h1>
               <p>Track all your expenses and transactions</p>
             </div>
 
@@ -183,7 +188,7 @@ export default function App() {
                 </svg>
               </button>
 
-              <div className="avatar">A</div>
+              <div className="avatar">{initial}</div>
             </div>
           </header>
 

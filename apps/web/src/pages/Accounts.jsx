@@ -33,7 +33,8 @@ const TYPES = ['Bank', 'Card', 'Wallet', 'Cash'];
 const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#3aa3a3', '#c0606a', '#475569'];
 
 const CATS_COLOR = (n) => window.BAL.catColor(n);
-const CAT_LIST = window.BAL.catNames();
+// Live (caches fill after login/hydrate, so don't capture at module load).
+const CAT_LIST = () => window.BAL.catNames();
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
@@ -162,7 +163,7 @@ function TxnList({ txns }) {
         </div>
         <select className="txn-field" value={cat} onChange={(e) => setCat(e.target.value)}>
           <option value="all">All categories</option>
-          {CAT_LIST.map((c) => <option key={c} value={c}>{c}</option>)}
+          {CAT_LIST().map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
@@ -255,7 +256,7 @@ export default function Accounts() {
   }, []);
 
   const onSave = useCallback((a) => {
-    setAccounts((list) => a.id ? list.map((x) => x.id === a.id ? a : x) : [...list, { ...a, id: 'ac_' + Date.now() }]);
+    setAccounts((list) => a.id ? list.map((x) => x.id === a.id ? a : x) : [...list, { ...a, id: window.BAL.newId() }]);
     setEditing(null);
   }, []);
   const onDel = useCallback((id) => {

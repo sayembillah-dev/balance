@@ -133,7 +133,7 @@ function Chat({ onClose }) {
           {msgs.length === 0 && (
             <div className="ai-empty">
               <span className="orb"><A d={AI.spark} fill /></span>
-              <h4>Hi Ananya 👋</h4>
+              <h4>Hi there 👋</h4>
               <p>Ask me anything about your spending, budgets, accounts or goals.</p>
               <div className="ai-chips">
                 {SUGGESTIONS.map((s) => (

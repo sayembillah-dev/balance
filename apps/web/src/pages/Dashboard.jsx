@@ -57,7 +57,7 @@ function Stat({ value, delta, good, sub }) {
   );
 }
 
-function Sparkline({ value, delta, pts }) {
+function Sparkline({ value, delta, pts, label }) {
   const w = 240, h = 38, max = Math.max(...pts), min = Math.min(...pts);
   const sx = (i) => (i / (pts.length - 1)) * w;
   const sy = (v) => h - 3 - ((v - min) / (max - min || 1)) * (h - 6);
@@ -66,7 +66,7 @@ function Sparkline({ value, delta, pts }) {
   return (
     <div className="wg-body">
       <div className="st-val">{value}</div>
-      <div className="st-meta"><Delta v={delta} /><span className="st-sub">total invested</span></div>
+      <div className="st-meta">{delta !== undefined && <Delta v={delta} />}<span className="st-sub">{label || 'total invested'}</span></div>
       <div className="st-spark">
         <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
           <polygon points={area} fill="var(--primary-soft)" />
@@ -106,7 +106,7 @@ function Donut({ segs }) {
 }
 
 function BarChart({ data, hot }) {
-  const max = Math.max(...data.map((d) => d.v));
+  const max = Math.max(...data.map((d) => d.v)) || 1;
   return (
     <div className="wg-body">
       <div className="bars">
@@ -176,41 +176,110 @@ function Quick() {
   );
 }
 
+// ---------- live data ----------
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const ym = (d) => (d || '').slice(0, 7);
+const fmtShort = (d) => { const x = new Date(d); return isNaN(x) ? '' : `${x.getDate()} ${MON[x.getMonth()]}`; };
+
+function Empty({ msg }) {
+  return <div className="wg-body"><div style={{ opacity: 0.55, fontSize: 14, padding: '10px 2px' }}>{msg}</div></div>;
+}
+
+// Derive every widget's data from the live caches (window.BAL). Recomputed when
+// data changes, so the dashboard always reflects the real account.
+function computeDashboard() {
+  const accts = window.BAL.loadAccounts();
+  const txns = window.BAL.loadTxns();
+  const savings = window.BAL.loadSavings();
+  const budgets = window.BAL.loadBudgets();
+  const payrecv = window.BAL.loadPayRecv();
+
+  const now = new Date();
+  const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  let income = 0, expense = 0, monthIncome = 0, monthExpense = 0;
+  const catSpend = {};
+  for (const t of txns) {
+    if (t.type === 'income') { income += t.amount; if (ym(t.date) === curYM) monthIncome += t.amount; }
+    else if (t.type === 'expense') {
+      expense += t.amount;
+      if (ym(t.date) === curYM) monthExpense += t.amount;
+      const c = t.category || 'Uncategorized';
+      catSpend[c] = (catSpend[c] || 0) + t.amount;
+    }
+  }
+  const openingSum = accts.reduce((s, a) => s + (Number(a.opening) || 0), 0);
+  const balanceTotal = openingSum + income - expense; // transfers net to zero
+  const savingsRate = monthIncome > 0 ? Math.round(((monthIncome - monthExpense) / monthIncome) * 100) : 0;
+
+  const categorySegs = Object.entries(catSpend).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    .map(([label, v]) => ({ label, v: Math.round(v) }));
+
+  const trend = [], netPts = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    let exp = 0, inc = 0;
+    for (const t of txns) {
+      if (ym(t.date) !== key) continue;
+      if (t.type === 'expense') exp += t.amount; else if (t.type === 'income') inc += t.amount;
+    }
+    trend.push({ label: MON[d.getMonth()], v: Math.round(exp) });
+    netPts.push(Math.round(inc - exp));
+  }
+
+  const recent = txns.slice(0, 5).map((t) => ({
+    av: (t.merchant || '?').charAt(0).toUpperCase(),
+    name: t.merchant || '(no description)',
+    meta: `${t.category || t.type} · ${fmtShort(t.date)}`,
+    amt: (t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '') + inr(t.amount),
+  }));
+
+  const goals = savings.goals || [];
+  let goal = null;
+  if (goals.length) {
+    const g = goals.slice().sort((a, b) => (b.saved / (b.target || 1)) - (a.saved / (a.target || 1)))[0];
+    const pct = g.target > 0 ? Math.min(100, Math.round((g.saved / g.target) * 100)) : 0;
+    goal = { pct, title: g.title, sub: `${inr(g.saved)} of ${inr(g.target)}` };
+  }
+
+  const bills = (payrecv || []).filter((p) => p.kind === 'payable' && !p.settled)
+    .sort((a, b) => (a.due || '').localeCompare(b.due || '')).slice(0, 4)
+    .map((p) => ({ av: (p.party || '?').charAt(0).toUpperCase(), name: p.party, meta: p.due ? `Due ${fmtShort(p.due)}` : 'No due date', amt: inr(p.amount) }));
+
+  const budgetRows = (budgets || []).slice(0, 4).map((b) => {
+    let spent = 0;
+    for (const t of txns) {
+      if (t.type !== 'expense' || ym(t.date) !== curYM) continue;
+      if (b.track === 'category' && t.category === b.category) spent += t.amount;
+      else if (b.track === 'tag' && (t.tags || []).includes(b.tagId)) spent += t.amount;
+    }
+    const pct = b.amount > 0 ? Math.min(100, Math.round((spent / b.amount) * 100)) : 0;
+    return { label: b.name, spent: inr(spent), cap: inr(b.amount), pct };
+  });
+
+  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0 };
+}
+
 const CATALOG = {
-  balance:      { title: 'Account Balance', icon: 'wallet', w: 1, h: 1, desc: 'Current total balance', render: () => <Stat value="₹8,98,450" delta={6.2} sub="vs last month" /> },
-  expenses:     { title: 'Monthly Expenses', icon: 'card', w: 1, h: 1, desc: 'This month so far', render: () => <Stat value="₹24,093" delta={-2.1} good sub="vs last month" /> },
-  savings:      { title: 'Savings Rate', icon: 'gauge', w: 1, h: 1, desc: 'Income kept this month', render: () => <Stat value="32%" delta={4.0} sub="of income saved" /> },
+  balance:      { title: 'Account Balance', icon: 'wallet', w: 1, h: 1, desc: 'Current total balance', render: (d) => <Stat value={inr(d.balanceTotal)} sub="across all accounts" /> },
+  expenses:     { title: 'Monthly Expenses', icon: 'card', w: 1, h: 1, desc: 'This month so far', render: (d) => <Stat value={inr(d.monthExpense)} sub="this month" /> },
+  savings:      { title: 'Savings Rate', icon: 'gauge', w: 1, h: 1, desc: 'Income kept this month', render: (d) => <Stat value={`${d.savingsRate}%`} sub="of income saved" /> },
   quick:        { title: 'Quick Actions', icon: 'bolt', w: 1, h: 1, desc: 'Shortcuts to move money', render: () => <Quick /> },
-  investment:   { title: 'Total Investment', icon: 'trend', w: 2, h: 1, desc: 'Portfolio value + trend', render: () => <Sparkline value="₹1,45,555" delta={12.4} pts={[8, 9, 8.5, 10, 11, 10.5, 12, 13, 12.5, 14, 14.5, 15]} /> },
-  budget:       { title: 'Budget Progress', icon: 'bars', w: 2, h: 1, desc: 'Spending vs caps', render: () => <ProgressList rows={[{ label: 'Food', spent: '₹6.1k', cap: '₹8k', pct: 76 }, { label: 'Shopping', spent: '₹4.3k', cap: '₹6k', pct: 72 }]} /> },
-  goal:         { title: 'Savings Goal', icon: 'target', w: 1, h: 2, desc: 'Progress toward a goal', render: () => <GoalRing pct={48} title="iPhone 17 Pro" sub="₹70,000 of ₹1,45,000" /> },
-  bills:        { title: 'Upcoming Bills', icon: 'bill', w: 1, h: 2, desc: 'Subscriptions & dues', render: () => <WList rows={[
-                    { av: 'N', name: 'Netflix', meta: 'Due 28 Jun', amt: '₹149', tint: 'color-mix(in oklab,#e23b3b 14%,#fff)', fg: '#c02626' },
-                    { av: 'S', name: 'Spotify', meta: 'Due 02 Jul', amt: '₹49', tint: 'color-mix(in oklab,#16a34a 14%,#fff)', fg: '#15803d' },
-                    { av: 'F', name: 'Figma', meta: 'Due 05 Jul', amt: '₹3,999' },
-                    { av: 'W', name: 'WiFi', meta: 'Due 11 Jul', amt: '₹399', tint: 'color-mix(in oklab,#2f6fe0 14%,#fff)', fg: '#2657c0' },
-                  ]} /> },
-  category:     { title: 'Spending by Category', icon: 'pie', w: 2, h: 2, desc: 'Where your money goes', render: () => <Donut segs={[
-                    { label: 'Food & Grocery', v: 6156 }, { label: 'Investment', v: 5000 }, { label: 'Shopping', v: 4356 },
-                    { label: 'Travelling', v: 3670 }, { label: 'Miscellaneous', v: 2749 }, { label: 'Bills', v: 2162 },
-                  ]} /> },
-  trend:        { title: 'Monthly Trend', icon: 'bars', w: 2, h: 2, desc: 'Expenses over 8 months', render: () => <BarChart hot={7} data={[
-                    { label: 'Jun', v: 18 }, { label: 'Jul', v: 22 }, { label: 'Aug', v: 16 }, { label: 'Sep', v: 25 },
-                    { label: 'Oct', v: 21 }, { label: 'Nov', v: 27 }, { label: 'Dec', v: 30 }, { label: 'Jan', v: 24 },
-                  ]} /> },
-  transactions: { title: 'Recent Transactions', icon: 'list', w: 2, h: 2, desc: 'Latest activity', render: () => <WList rows={[
-                    { av: 'A', name: 'Amazon', meta: 'Shopping · 31 May', amt: '−₹2,100' },
-                    { av: 'P', name: 'PVR Cinemas', meta: 'Movie · 28 May', amt: '−₹299' },
-                    { av: 'G', name: 'Groww', meta: 'Investment · 24 May', amt: '−₹5,000' },
-                    { av: 'I', name: 'IRCTC', meta: 'Travel · 20 May', amt: '−₹2,460' },
-                    { av: 'S', name: 'Swiggy', meta: 'Food · 15 May', amt: '−₹678' },
-                  ]} /> },
+  investment:   { title: 'Savings Pool', icon: 'trend', w: 2, h: 1, desc: 'Total saved + recent flow', render: (d) => <Sparkline value={inr(d.pool)} label="total saved" pts={d.netPts.some((x) => x) ? d.netPts : [0, 0, 0, 0, 0, 0, 0, 0]} /> },
+  budget:       { title: 'Budget Progress', icon: 'bars', w: 2, h: 1, desc: 'Spending vs caps', render: (d) => d.budgetRows.length ? <ProgressList rows={d.budgetRows} /> : <Empty msg="No budgets yet — add some on the Budgets page." /> },
+  goal:         { title: 'Savings Goal', icon: 'target', w: 1, h: 2, desc: 'Progress toward a goal', render: (d) => d.goal ? <GoalRing pct={d.goal.pct} title={d.goal.title} sub={d.goal.sub} /> : <Empty msg="No goals yet — add one in Saving & Goals." /> },
+  bills:        { title: 'Upcoming Bills', icon: 'bill', w: 1, h: 2, desc: 'Subscriptions & dues', render: (d) => d.bills.length ? <WList rows={d.bills} /> : <Empty msg="No upcoming dues." /> },
+  category:     { title: 'Spending by Category', icon: 'pie', w: 2, h: 2, desc: 'Where your money goes', render: (d) => d.categorySegs.length ? <Donut segs={d.categorySegs} /> : <Empty msg="No spending yet." /> },
+  trend:        { title: 'Monthly Trend', icon: 'bars', w: 2, h: 2, desc: 'Expenses over 8 months', render: (d) => <BarChart hot={7} data={d.trend} /> },
+  transactions: { title: 'Recent Transactions', icon: 'list', w: 2, h: 2, desc: 'Latest activity', render: (d) => d.recent.length ? <WList rows={d.recent} /> : <Empty msg="No transactions yet." /> },
 };
 
 const DEFAULTS = ['balance', 'expenses', 'investment', 'category', 'trend', 'transactions', 'bills', 'goal'];
 const STORE = 'balance.widgets.v1';
 
-function WidgetCard({ id, cols, onRemove, onHandleDown, dragging }) {
+function WidgetCard({ id, cols, onRemove, onHandleDown, dragging, data }) {
   const c = CATALOG[id];
   if (!c) return null;
   const span = Math.min(c.w, cols);
@@ -228,7 +297,7 @@ function WidgetCard({ id, cols, onRemove, onHandleDown, dragging }) {
           <button className="wg-tool" title="Remove" aria-label="Remove widget" onClick={() => onRemove(id)}><Ico d={ICONS.x} /></button>
         </div>
       </div>
-      {c.render()}
+      {c.render(data)}
     </div>
   );
 }
@@ -275,6 +344,20 @@ export default function Dashboard() {
   const [dragId, setDragId] = useState(null);
   const widgetsRef = useRef(widgets);
   widgetsRef.current = widgets;
+
+  // Widget data, recomputed whenever the underlying data changes (or the page is
+  // shown), so the dashboard reflects the real account rather than static demo data.
+  const [data, setData] = useState(computeDashboard);
+  useEffect(() => {
+    const refresh = () => setData(computeDashboard());
+    refresh();
+    window.addEventListener('balance:txn-changed', refresh);
+    window.addEventListener('balance:page', refresh);
+    return () => {
+      window.removeEventListener('balance:txn-changed', refresh);
+      window.removeEventListener('balance:page', refresh);
+    };
+  }, []);
 
   useEffect(() => { window.BAL.saveWidgets(widgets); }, [widgets]);
 
@@ -348,7 +431,7 @@ export default function Dashboard() {
 
       <div className="dash-grid" ref={gridRef} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
         {widgets.map((id) => (
-          <WidgetCard key={id} id={id} cols={cols} onRemove={remove} onHandleDown={startHandle} dragging={dragId === id} />
+          <WidgetCard key={id} id={id} cols={cols} onRemove={remove} onHandleDown={startHandle} dragging={dragId === id} data={data} />
         ))}
       </div>
 

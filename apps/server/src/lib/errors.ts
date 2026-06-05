@@ -82,6 +82,15 @@ export function errorHandler(
     return;
   }
 
+  // multer (upload) errors — e.g. file too large.
+  if (err instanceof Error && err.name === 'MulterError') {
+    const tooBig = (err as { code?: string }).code === 'LIMIT_FILE_SIZE';
+    res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: tooBig ? 'File is too large (max 10MB)' : err.message },
+    });
+    return;
+  }
+
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: { code: 'INTERNAL', message: 'Internal server error' },

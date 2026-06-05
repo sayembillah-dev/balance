@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/auth.jsx';
+import { apiObjectUrl } from './lib/api.js';
 
 import Dashboard from './pages/Dashboard.jsx';
 import Transactions from './pages/Transactions.jsx';
@@ -93,6 +94,15 @@ export default function App() {
     ? NAV.map((g) => (g.group === 'General' ? { ...g, items: [...g.items, { key: 'admin', label: 'Admin' }] } : g))
     : NAV;
   const pageEntries = Object.entries(PAGES).filter(([k]) => k !== 'admin' || isAdmin);
+
+  // Topbar avatar — fetch the private image as a blob URL (img can't send auth).
+  const [avatarUrl, setAvatarUrl] = useState('');
+  useEffect(() => {
+    if (!user?.avatarUploadId) { setAvatarUrl(''); return; }
+    let url; let alive = true;
+    apiObjectUrl(`/uploads/${user.avatarUploadId}`).then((u) => { if (alive) { url = u; setAvatarUrl(u); } }).catch(() => {});
+    return () => { alive = false; if (url) URL.revokeObjectURL(url); };
+  }, [user?.avatarUploadId]);
 
   // fire the initial page event so pages that depend on it measure/refresh
   useEffect(() => { window.dispatchEvent(new CustomEvent('balance:page', { detail: active })); }, []); // eslint-disable-line
@@ -198,7 +208,7 @@ export default function App() {
                 </svg>
               </button>
 
-              <div className="avatar">{initial}</div>
+              <div className="avatar" style={avatarUrl ? { backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : undefined}>{avatarUrl ? '' : initial}</div>
             </div>
           </header>
 

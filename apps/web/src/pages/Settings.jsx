@@ -1,7 +1,8 @@
 /* Balance — Settings.
    Internal tabs; Preferences & Logic is the showcase.
    Draft/Save/Cancel with localStorage persistence. */
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { apiUpload, apiObjectUrl } from '../lib/api.js';
 
 const G = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -47,9 +48,12 @@ function ProfilePanel({ d, set }) {
     <>
       <div className="set-group">
         <div className="set-profile">
-          <div className="set-avatar">{d.name.charAt(0)}</div>
+          <div className="set-avatar" style={avatarUrl ? { backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : undefined}>
+            {avatarUrl ? '' : d.name.charAt(0)}
+          </div>
           <div className="pmeta"><b>{d.name || 'Your name'}</b><span>{d.email}</span></div>
-          <button className="btn-ghost">Change photo</button>
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }} onChange={onPickPhoto} />
+          <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Change photo</button>
         </div>
       </div>
       <div className="set-group">
@@ -172,6 +176,23 @@ export default function Settings() {
   const dirty = JSON.stringify(d) !== JSON.stringify(saved);
   const save = () => { window.BAL.saveSettings(d); setSaved(d); setJustSaved(true); };
   const cancel = () => { setD(saved); setJustSaved(false); };
+
+  // Avatar: fetch the saved image (private → blob URL), and upload on change.
+  const fileRef = useRef(null);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  useEffect(() => {
+    if (!d.avatarUploadId) { setAvatarUrl(''); return; }
+    let url; let alive = true;
+    apiObjectUrl(`/uploads/${d.avatarUploadId}`).then((u) => { if (alive) { url = u; setAvatarUrl(u); } }).catch(() => {});
+    return () => { alive = false; if (url) URL.revokeObjectURL(url); };
+  }, [d.avatarUploadId]);
+  const onPickPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try { const { id } = await apiUpload('/uploads', file); set('avatarUploadId', id); }
+    catch (err) { window.alert(err?.message || 'Upload failed'); }
+    e.target.value = '';
+  };
 
   const cur = TABS.find((t) => t.id === tab);
   const Panel = { profile: ProfilePanel, prefs: PrefsPanel, security: SecurityPanel, data: DataPanel }[tab];

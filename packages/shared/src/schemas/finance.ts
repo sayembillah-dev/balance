@@ -70,6 +70,7 @@ export const transactionCreateSchema = z
     toAccountId: uuid.nullish(),
     categoryId: uuid.nullish(),
     subcategoryId: uuid.nullish(),
+    receiptUploadId: uuid.nullish(),
     tags: z.array(uuid).default([]),
   })
   .superRefine((d, ctx) => {
@@ -107,6 +108,7 @@ export const transactionUpdateSchema = z.object({
   toAccountId: uuid.nullish(),
   categoryId: uuid.nullish(),
   subcategoryId: uuid.nullish(),
+  receiptUploadId: uuid.nullish(),
   tags: z.array(uuid).optional(),
 });
 

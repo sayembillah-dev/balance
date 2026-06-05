@@ -2,6 +2,7 @@
    Opens on `balance:add-txn` (detail: { tab?, txn?: existing, presetFrom?: txn }).
    Saves transactions via window.BAL.saveTxns; presets via window.BAL.savePresets. */
 import React, { useState, useEffect } from 'react';
+import { apiUpload } from '../lib/api.js';
 
 const X = ({ d, fill }) => (
   <svg viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor"
@@ -253,6 +254,21 @@ function Modal({ open, onClose }) {
               <div className="field"><label>Amount (₹)</label><input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <TxnFields f={f} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
               <div className="field"><label>Date</label><input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
+              <div className="field">
+                <label>Receipt <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label>
+                {f.receiptUploadId ? (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <span>📎 Receipt attached</span>
+                    <button type="button" className="btn-ghost" onClick={() => set('receiptUploadId', null)}>Remove</button>
+                  </div>
+                ) : (
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    try { const { id } = await apiUpload('/uploads', file); set('receiptUploadId', id); }
+                    catch (err) { window.alert(err?.message || 'Upload failed'); }
+                  }} />
+                )}
+              </div>
             </div>
           )}
 

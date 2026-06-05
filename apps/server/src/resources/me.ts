@@ -11,6 +11,7 @@ export const meRouter: Router = Router();
 const PROFILE_COLUMNS = {
   id: users.id, email: users.email, name: users.name,
   phone: users.phone, timezone: users.timezone, role: users.role,
+  avatarUploadId: users.avatarUploadId,
 } as const;
 
 // Current user's profile. Also used to restore session state after a reload
@@ -18,7 +19,7 @@ const PROFILE_COLUMNS = {
 meRouter.get('/', async (req, res) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, authedUserId(req)),
-    columns: { id: true, email: true, name: true, phone: true, timezone: true, role: true },
+    columns: { id: true, email: true, name: true, phone: true, timezone: true, role: true, avatarUploadId: true },
   });
   if (!user) throw notFound('User not found');
   res.json(user);

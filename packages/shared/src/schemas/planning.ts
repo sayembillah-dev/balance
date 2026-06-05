@@ -110,6 +110,7 @@ export const profileUpdateSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   phone: z.string().max(40).nullish(),
   timezone: z.string().max(80).nullish(),
+  avatarUploadId: uuid.nullish(),
 });
 
 export const dashboardSchema = z.object({

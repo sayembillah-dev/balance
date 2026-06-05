@@ -81,3 +81,25 @@ export const apiPost = (path, body, opts) => api(path, { method: 'POST', body },
 export const apiPatch = (path, body) => api(path, { method: 'PATCH', body });
 export const apiPut = (path, body) => api(path, { method: 'PUT', body });
 export const apiDelete = (path) => api(path, { method: 'DELETE' });
+
+/** Uploads a File via multipart/form-data. Returns the created upload record. */
+export function apiUpload(path, file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api(path, { method: 'POST', body: fd });
+}
+
+/**
+ * Fetches a private image with auth and returns a blob object URL — needed
+ * because <img src> can't send the Bearer header. Caller should revokeObjectURL
+ * when done.
+ */
+export async function apiObjectUrl(path) {
+  let res = await doFetch(path, { method: 'GET' }, true);
+  if (res.status === 401) {
+    await refreshSession();
+    res = await doFetch(path, { method: 'GET' }, true);
+  }
+  if (!res.ok) throw new ApiError(res.status, {});
+  return URL.createObjectURL(await res.blob());
+}

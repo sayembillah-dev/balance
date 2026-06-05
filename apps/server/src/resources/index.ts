@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, requireAdmin } from '../auth/middleware.js';
 import { meRouter } from './me.js';
 import { adminRouter } from './admin.js';
+import { uploadsRouter } from './uploads.js';
 import { accountsRouter } from './accounts.js';
 import { categoriesRouter } from './categories.js';
 import { tagsRouter } from './tags.js';
@@ -20,6 +21,7 @@ export const apiRouter: Router = Router();
 
 apiRouter.use(requireAuth);
 apiRouter.use('/me', meRouter);
+apiRouter.use('/uploads', uploadsRouter);
 apiRouter.use('/accounts', accountsRouter);
 apiRouter.use('/categories', categoriesRouter);
 apiRouter.use('/tags', tagsRouter);

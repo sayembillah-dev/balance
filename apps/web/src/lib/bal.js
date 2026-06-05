@@ -74,6 +74,7 @@ const adaptTxn = (t) => ({
   account: t.accountId, fromAccount: t.fromAccountId, toAccount: t.toAccountId,
   category: catIdToName.get(t.categoryId) || '',
   subcategory: catIdToName.get(t.subcategoryId) || '',
+  receiptUploadId: t.receiptUploadId || null,
   tags: t.tags || [],
 });
 const adaptPreset = (p) => ({
@@ -98,6 +99,7 @@ const toApiTxn = (t) => ({
   accountId: t.account || null,
   fromAccountId: t.fromAccount || null, toAccountId: t.toAccount || null,
   categoryId: parentIdFor(t.category, t.type), subcategoryId: subIdFor(t.category, t.type, t.subcategory),
+  receiptUploadId: t.receiptUploadId || null,
   tags: t.tags || [],
 });
 const toApiPreset = (p) => ({
@@ -312,7 +314,7 @@ function loadSettings() { return settingsObj; }
 function saveSettings(d) {
   settingsObj = { ...settingsObj, ...d };
   // profile fields → /me ; preference fields → /me/settings (privacy → privacyMask)
-  apiPatch('/me', { name: d.name, phone: d.phone || null, timezone: d.timezone || null })
+  apiPatch('/me', { name: d.name, phone: d.phone || null, timezone: d.timezone || null, avatarUploadId: d.avatarUploadId || null })
     .catch((e) => console.error('[bal] profile save failed', e));
   apiPatch('/me/settings', {
     currency: d.currency, monthStart: d.monthStart, rollover: d.rollover,
@@ -391,6 +393,7 @@ async function hydrate() {
   // Flatten profile (/me) + preferences (/me/settings) into the page's shape.
   settingsObj = {
     name: me.name, email: me.email, phone: me.phone || '', timezone: me.timezone || '',
+    avatarUploadId: me.avatarUploadId || null,
     currency: prefs.currency ?? 'INR', monthStart: prefs.monthStart ?? '1',
     rollover: prefs.rollover ?? true, tagBehavior: prefs.tagBehavior ?? 'parallel',
     privacy: prefs.privacyMask ?? false, twoFactor: prefs.twoFactor ?? false,

@@ -9,7 +9,7 @@ import {
 } from '@balance/shared';
 import { db } from '../db/client.js';
 import {
-  transactions, transactionTags, accounts, categories, tags,
+  transactions, transactionTags, accounts, categories, tags, uploads,
 } from '../db/schema/index.js';
 import { authedUserId } from '../auth/middleware.js';
 import { owned, softDeleteSet } from '../lib/tenancy.js';
@@ -57,12 +57,19 @@ async function assertRefsOwned(
   d: {
     accountId?: string | null; fromAccountId?: string | null;
     toAccountId?: string | null; categoryId?: string | null;
-    subcategoryId?: string | null; tags?: string[];
+    subcategoryId?: string | null; receiptUploadId?: string | null; tags?: string[];
   },
 ) {
   await assertOwnedIds(accounts, [d.accountId, d.fromAccountId, d.toAccountId], userId, 'Account');
   await assertOwnedIds(categories, [d.categoryId, d.subcategoryId], userId, 'Category');
   await assertOwnedIds(tags, d.tags ?? [], userId, 'Tag');
+  // uploads has no soft-delete column, so check ownership directly.
+  if (d.receiptUploadId) {
+    const u = await db.query.uploads.findFirst({
+      where: and(eq(uploads.id, d.receiptUploadId), eq(uploads.userId, userId)),
+    });
+    if (!u) throw notFound('Receipt not found');
+  }
 }
 
 // GET / — filtered, keyset-paginated list. Returns { items, nextCursor }.

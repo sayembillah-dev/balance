@@ -4,3 +4,4 @@ export * from './ids.js';
 export * from './enums.js';
 export * from './money.js';
 export * from './schemas/auth.js';
+export * from './schemas/finance.js';

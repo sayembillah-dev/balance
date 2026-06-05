@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { APP_NAME } from '@balance/shared';
 import { pool } from './db/client.js';
 import { authRouter } from './auth/routes.js';
+import { apiRouter } from './resources/index.js';
 import { notFoundHandler, errorHandler } from './lib/errors.js';
 
 /**
@@ -32,6 +33,7 @@ export function createApp(): Express {
   });
 
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1', apiRouter);
 
   // Must come last.
   app.use(notFoundHandler);

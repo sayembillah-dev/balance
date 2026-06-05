@@ -13,6 +13,7 @@ import {
   refreshTokens,
 } from '../db/schema/index.js';
 import { hashPassword, verifyPassword } from './passwords.js';
+import { seedDefaultsForUser } from '../db/seedDefaults.js';
 import { conflict, unauthorized } from '../lib/errors.js';
 
 export interface AuthUser {
@@ -50,16 +51,11 @@ export async function userCount(): Promise<number> {
   return row?.n ?? 0;
 }
 
-/** Creates the per-user singleton rows (settings, savings pool, dashboard). */
-async function provisionSingletons(userId: string): Promise<void> {
-  await db.insert(settings).values({ userId }).onConflictDoNothing();
-  await db.insert(savings).values({ userId }).onConflictDoNothing();
-  await db
-    .insert(dashboardLayouts)
-    .values({ userId, widgetIds: DEFAULT_WIDGETS })
-    .onConflictDoNothing();
-}
-
+/**
+ * Creates a user with everything a fresh account needs, atomically: the user
+ * row, the per-user singletons (settings, savings pool, dashboard layout), and a
+ * starter taxonomy of default categories + tags. Rolls back entirely on failure.
+ */
 export async function createUser(input: {
   email: string;
   password: string;
@@ -73,18 +69,26 @@ export async function createUser(input: {
   if (existing) throw conflict('That email is already registered');
 
   const passwordHash = await hashPassword(input.password);
-  const [row] = await db
-    .insert(users)
-    .values({
-      email: input.email,
-      passwordHash,
-      name: input.name,
-      role: input.role ?? 'user',
-    })
-    .returning(PUBLIC_COLUMNS);
 
-  await provisionSingletons(row!.id);
-  return row!;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(users)
+      .values({
+        email: input.email,
+        passwordHash,
+        name: input.name,
+        role: input.role ?? 'user',
+      })
+      .returning(PUBLIC_COLUMNS);
+
+    const userId = row!.id;
+    await tx.insert(settings).values({ userId });
+    await tx.insert(savings).values({ userId });
+    await tx.insert(dashboardLayouts).values({ userId, widgetIds: DEFAULT_WIDGETS });
+    await seedDefaultsForUser(tx, userId);
+
+    return row!;
+  });
 }
 
 export async function authenticate(

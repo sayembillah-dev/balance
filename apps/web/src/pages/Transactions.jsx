@@ -109,7 +109,8 @@ function Transactions() {
   const toggleSort = (key) => setSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'amount' ? 'desc' : 'desc' });
   const sign = (t) => t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
   const openNew = () => window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { tab: 'expense' } }));
-  const openEdit = (t) => window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { txn: t } }));
+  const openEdit   = (t) => window.dispatchEvent(new CustomEvent('balance:add-txn',    { detail: { txn: t } }));
+  const openDetail = (t) => window.dispatchEvent(new CustomEvent('balance:txn-detail', { detail: { txn: t } }));
 
   const onDup = useCallback((t) => {
     const all = window.BAL.loadTxns();
@@ -134,7 +135,7 @@ function Transactions() {
   );
 
   const ActionMenu = ({ t }) => (
-    <div className="tx-actions">
+    <div className="tx-actions" onClick={(e) => e.stopPropagation()}>
       <button className={`kebab${menuId === t.id ? ' open' : ''}`} aria-label="Actions"
               onClick={(e) => { e.stopPropagation(); setMenuId(menuId === t.id ? null : t.id); }}>
         <TIco d={TI.kebab} fill />
@@ -180,7 +181,7 @@ function Transactions() {
       ) : cards ? (
         <div className="txn-cards">
           {slice.map((t) => (
-            <div className="txn-cardrow" key={t.id}>
+            <div className="txn-cardrow" key={t.id} onClick={() => openDetail(t)}>
               <Avatar name={t.merchant} category={t.category} />
               <div className="tx-mid">
                 <b>{t.merchant}</b>
@@ -209,7 +210,7 @@ function Transactions() {
               </thead>
               <tbody>
                 {slice.map((t) => (
-                  <tr key={t.id}>
+                  <tr key={t.id} onClick={() => openDetail(t)}>
                     <td>
                       <div className="tx-merchant">
                         <Avatar name={t.merchant} category={t.category} />

@@ -1,10 +1,10 @@
 <div align="center">
 
-# 💰 Balance
+# Balance
 
 ### Your money, your server, your rules.
 
-A **self-hosted personal finance tracker** with a clean, modern UI — accounts,
+A **self-hosted personal finance tracker** with a clean, modern UI: accounts,
 transactions, budgets, savings goals, and more. No subscriptions, no data mining,
 no cloud you don't control. Spin it up with one command and own your finances.
 
@@ -16,43 +16,43 @@ no cloud you don't control. Spin it up with one command and own your finances.
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 
-[**Quick Deploy**](#-quick-deploy-no-source-needed) ·
-[**Full Setup Guide**](#-deploy-with-docker-compose-step-by-step) ·
-[**Run Locally**](#-run-locally-development) ·
-[**Configuration**](#-configuration) ·
-[**FAQ**](#-faq--troubleshooting)
+[**Quick Deploy**](#quick-deploy-no-source-needed) ·
+[**Full Setup Guide**](#deploy-with-docker-compose-step-by-step) ·
+[**Run Locally**](#run-locally-development) ·
+[**Configuration**](#configuration) ·
+[**FAQ**](#faq--troubleshooting)
 
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
-Everything you need to track your money — and nothing you don't.
+Everything you need to track your money, and nothing you don't.
 
 | | |
 |---|---|
-| 🏦 **Accounts** | Track balances across as many accounts as you like |
-| 💸 **Transactions** | Fast entry with categories, tags, and notes |
-| 🗂️ **Categories & Tags** | Organize spending your way |
-| 📊 **Budgets** | Set limits and watch them live |
-| 🎯 **Savings Goals** | Define targets and track progress |
-| 🤝 **Pay / Receive** | Keep tabs on money you owe and money owed to you |
-| 📝 **Notes** | Jot down anything, attached to your finances |
-| 🧾 **Receipt Uploads** | Attach images to transactions; set a profile picture |
-| 🌍 **Multi-Currency** | Pick an app-wide currency, applied instantly |
-| 📐 **Custom Dashboard** | Rearrangeable widgets wired to your real data |
-| 🤖 **Built-in Assistant** | A data-grounded chat helper — works offline, no API key |
-| 🧙 **First-Run Wizard** | Guided onboarding the first time you open the app |
-| 🛡️ **Admin Portal** | Manage users, invitations, and instance settings |
-| 🔐 **Secure by Default** | argon2id password hashing, rotating JWT sessions, invite-only signups |
+| **Accounts** | Track balances across as many accounts as you like |
+| **Transactions** | Fast entry with categories, tags, and notes |
+| **Categories & Tags** | Organize spending your way |
+| **Budgets** | Set limits and watch them live |
+| **Savings Goals** | Define targets and track progress |
+| **Pay / Receive** | Keep tabs on money you owe and money owed to you |
+| **Notes** | Jot down anything, attached to your finances |
+| **Receipt Uploads** | Attach images to transactions; set a profile picture |
+| **Multi-Currency** | Pick an app-wide currency, applied instantly |
+| **Custom Dashboard** | Rearrangeable widgets wired to your real data |
+| **Built-in Assistant** | A data-grounded chat helper, works offline, no API key |
+| **First-Run Wizard** | Guided onboarding the first time you open the app |
+| **Admin Portal** | Manage users, invitations, and instance settings |
+| **Secure by Default** | argon2id password hashing, rotating JWT sessions, invite-only signups |
 
 ---
 
-## ⚡ Quick Deploy (no source needed)
+## Quick Deploy (no source needed)
 
 **No `git clone` required.** Copy the snippet below into a file called
-`docker-compose.yml`, then run two commands — that's it.
+`docker-compose.yml`, then run two commands - that's it.
 
 ```yaml
 # docker-compose.yml — save this file, nothing else needed
@@ -99,19 +99,19 @@ docker compose pull          # pull the latest image from ghcr.io
 docker compose up -d         # start in the background
 ```
 
-Open **http://localhost:4000** — the first boot shows the setup wizard.
+Open **http://localhost:4000** - the first boot shows the setup wizard.
 
 > **Want to change the port or DB password?** Create an `.env` file next to
-> `docker-compose.yml` (see [Configuration](#-configuration)).
+> `docker-compose.yml` (see [Configuration](#configuration)).
 
 ---
 
-## 🐳 Deploy with Docker Compose (Step by Step)
+## Deploy with Docker Compose (Step by Step)
 
 New to Docker? No problem. Follow these steps exactly and you'll have Balance
-running. **You don't need to know any Docker internals** — Compose does the work.
+running. **You don't need to know any Docker internals** - Compose does the work.
 
-### Step 0 — Install Docker
+### Step 0 - Install Docker
 
 Install **[Docker Desktop](https://docs.docker.com/get-docker/)** (Mac/Windows)
 or **Docker Engine + Compose plugin** (Linux). When it's working, this prints a
@@ -122,19 +122,19 @@ docker --version
 docker compose version
 ```
 
-> ℹ️ Modern Docker uses `docker compose` (a space). If you have an older setup
+> Modern Docker uses `docker compose` (a space). If you have an older setup
 > that only has `docker-compose` (a hyphen), use that form instead everywhere below.
 
-### Step 1 — Get the compose file
+### Step 1 - Get the compose file
 
-**Option A — published image (recommended, no source needed)**
+**Option A - published image (recommended, no source needed)**
 
 Create an empty folder, save the compose snippet from the
-[Quick Deploy](#-quick-deploy-no-source-needed) section above as
+[Quick Deploy](#quick-deploy-no-source-needed) section above as
 `docker-compose.yml` inside it, then move into that folder. You are now ready
 for Step 2. You do *not* need the `Dockerfile`, source code, or `.env.example`.
 
-**Option B — build from source**
+**Option B - build from source**
 
 Clone the repo if you want to build the image yourself or hack on the code:
 
@@ -150,7 +150,7 @@ ls
 # you should see: docker-compose.yml  Dockerfile  .env.example  apps  packages ...
 ```
 
-### Step 2 — Create your `.env` file
+### Step 2 - Create your `.env` file
 
 The repo ships a template called **`.env.example`**. You make your own copy named
 exactly **`.env`** (this is the file Docker reads). It lives **in the same folder
@@ -160,10 +160,10 @@ as `docker-compose.yml`**:
 cp .env.example .env
 ```
 
-> 📌 The file **must be named `.env`** (with the leading dot, no extension) and
+> The file **must be named `.env`** (with the leading dot, no extension) and
 > sit **next to `docker-compose.yml`**. That's the only place Compose looks for it.
 
-Now open `.env` in any text editor. **You can leave everything as-is to start** —
+Now open `.env` in any text editor. **You can leave everything as-is to start** -
 the defaults work. But for a real deployment, you'll want to change at least these:
 
 ```bash
@@ -178,10 +178,10 @@ ADMIN_PASSWORD=another-strong-password
 APP_PORT=4000
 ```
 
-> 🔐 **`.env` holds your secrets** (DB password, admin password). It is already
-> listed in `.gitignore`, so it won't be committed — keep it that way.
+> **`.env` holds your secrets** (DB password, admin password). It is already
+> listed in `.gitignore`, so it won't be committed - keep it that way.
 
-### Step 3 — Understand what you're about to run *(optional but helpful)*
+### Step 3 - Understand what you're about to run *(optional but helpful)*
 
 The [`docker-compose.yml`](docker-compose.yml) file describes **two containers**
 ("services") that run together. Here's the whole file, explained:
@@ -227,11 +227,11 @@ volumes:                                # ③ The named volumes that persist you
   or fall back to `balance` if it's not set."* This is how your `.env` plugs in.
 - **`ports: "4000:4000"`** maps a port on *your computer* (left) to a port *inside
   the container* (right). Visit the left number in your browser.
-- **`volumes`** are how your data survives restarts — see the next step. 👇
+- **`volumes`** are how your data survives restarts (see the next step).
 
-### Step 4 — How your data is stored (volumes)
+### Step 4 - How your data is stored (volumes)
 
-You **don't create any folders or volumes yourself** — Docker creates and manages
+You **don't create any folders or volumes yourself** - Docker creates and manages
 them automatically the first time you start. Balance uses two **named volumes**:
 
 | Volume | What's inside | Why it matters |
@@ -242,22 +242,22 @@ them automatically the first time you start. Balance uses two **named volumes**:
 Because these are **named volumes**, your data is kept safely *outside* the
 containers. You can stop, rebuild, or update the app and your data stays put.
 **To back up Balance, you back up these two volumes** (see
-[Data & Backups](#-data--backups)).
+[Data & Backups](#data--backups)).
 
-> 🆚 Prefer to see your DB files as a folder on disk instead? You can swap the
+> Prefer to see your DB files as a folder on disk instead? You can swap the
 > named volume for a *bind mount* like `./pgdata:/var/lib/postgresql/data`. Named
 > volumes are recommended (faster and safer) unless you have a specific reason.
 
-### Step 5 — Start it 🚀
+### Step 5 - Start it
 
-**Option A — published image**
+**Option A - published image**
 
 ```bash
 docker compose pull          # fetch the latest Balance image from ghcr.io
 docker compose up -d         # start everything in the background
 ```
 
-**Option B — build from source**
+**Option B - build from source**
 
 ```bash
 docker compose up -d --build
@@ -268,24 +268,24 @@ omit `--build` for fast restarts.
 
 On the very first boot Balance automatically:
 
-1. 📥 Pulls / uses the PostgreSQL image and starts the database
-2. 🗃️ Applies all database migrations (creates the tables)
-3. 🌐 Starts serving the app
+1. Pulls / uses the PostgreSQL image and starts the database
+2. Applies all database migrations (creates the tables)
+3. Starts serving the app
 
-> The `-d` means "detached" — it runs in the background. Drop it if you'd rather
+> The `-d` means "detached" - it runs in the background. Drop it if you'd rather
 > watch the logs live in your terminal.
 
-### Step 6 — Open Balance 🎉
+### Step 6 - Open Balance
 
 Go to **[http://localhost:4000](http://localhost:4000)** (or your `APP_PORT`).
 
 - If you **didn't** set `ADMIN_EMAIL`/`ADMIN_PASSWORD`: you'll see a one-time
-  **setup wizard** — create your admin account there.
+  **setup wizard** - create your admin account there.
 - If you **did** set them: just log in with those credentials.
 
-That's it — you're self-hosting Balance. 💚
+That's it, you're self-hosting Balance.
 
-### Step 7 — Everyday commands
+### Step 7 - Everyday commands
 
 Run these from the `balance/` folder whenever you need them:
 
@@ -305,13 +305,13 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-> ⚠️ **Careful:** `docker compose down -v` adds `-v`, which **deletes the volumes
-> too** — that wipes your database and uploads. Only use `-v` if you truly want to
+> **Careful:** `docker compose down -v` adds `-v`, which **deletes the volumes
+> too** - that wipes your database and uploads. Only use `-v` if you truly want to
 > start over from scratch.
 
 ---
 
-## 🧑‍💻 Run Locally (Development)
+## Run Locally (Development)
 
 For hacking on Balance with hot-reload across the whole stack.
 
@@ -341,11 +341,11 @@ npm run dev
 ```
 
 Open the **Vite URL** it prints (usually `http://localhost:5173`). The web dev
-server proxies `/api` to the backend on `:4000`, so auth and data Just Work. ✨
+server proxies `/api` to the backend on `:4000`, so auth and data Just Work.
 
 ---
 
-## 🧰 Useful Scripts
+## Useful Scripts
 
 Run these from the repo root.
 
@@ -355,31 +355,31 @@ Run these from the repo root.
 | `npm run build` | Production build of shared, server, and web |
 | `npm run db:migrate` | Apply pending database migrations |
 | `npm run db:generate` | Generate a new migration after you change the schema |
-| `npm run db:studio` | Open Drizzle Studio — a visual DB browser |
+| `npm run db:studio` | Open Drizzle Studio - a visual DB browser |
 | `npm test` | Run the server test suite |
 
-> 💡 **You almost never run the `db:*` scripts by hand.** Migrations apply
+> **You almost never run the `db:*` scripts by hand.** Migrations apply
 > **automatically** inside the container on every deploy. `db:generate` is only
 > for when *you* change the schema; `db:studio` is an optional dev convenience.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-All configuration is via environment variables — see
+All configuration is via environment variables - see
 [`.env.example`](.env.example) for the full annotated list. Here are the ones
 that matter:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | ✅ (dev) | — | Postgres connection string. Set by Compose automatically in Docker. |
-| `DATA_DIR` | — | `/data` (Docker) | Where uploads + the generated JWT secret live |
-| `JWT_SECRET` | — | auto-generated | Session signing key. Auto-created in `DATA_DIR` if unset; set explicitly to share across replicas |
-| `STORAGE_DRIVER` | — | `local` | Upload storage: `local` today (`s3` planned) |
-| `APP_PORT` | — | `4000` | Host port to expose the app on (Docker) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | — | Seed the first admin and skip the setup wizard |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | — | — | Email for password-reset + invites. Without it, those links surface in the admin portal / logs |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | — | `balance` | Credentials for the bundled Postgres (Docker) |
+| `DATABASE_URL` | Yes (dev) | - | Postgres connection string. Set by Compose automatically in Docker. |
+| `DATA_DIR` | - | `/data` (Docker) | Where uploads + the generated JWT secret live |
+| `JWT_SECRET` | - | auto-generated | Session signing key. Auto-created in `DATA_DIR` if unset; set explicitly to share across replicas |
+| `STORAGE_DRIVER` | - | `local` | Upload storage: `local` today (`s3` planned) |
+| `APP_PORT` | - | `4000` | Host port to expose the app on (Docker) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | - | - | Seed the first admin and skip the setup wizard |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | - | - | Email for password-reset + invites. Without it, those links surface in the admin portal / logs |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | - | `balance` | Credentials for the bundled Postgres (Docker) |
 
 <details>
 <summary><b>Notes for the Docker stack</b></summary>
@@ -389,7 +389,7 @@ that matter:
 - **Runtime defaults** (`PORT`, `DATA_DIR=/data`, `STORAGE_DRIVER=local`,
   `NODE_ENV=production`) are baked into the image, so `docker-compose.yml` only
   wires the deploy-specific bits. Override any of them via `.env`.
-- **`.env` is optional** — `docker compose up` works with the built-in defaults.
+- **`.env` is optional** - `docker compose up` works with the built-in defaults.
 - **`DATABASE_URL`** is set in Compose (not `.env`) so the in-container `db` host
   always wins, even if a dev `.env` points it at localhost.
 
@@ -397,9 +397,9 @@ that matter:
 
 ---
 
-## 💾 Data & Backups
+## Data & Backups
 
-Your data lives in **two Docker volumes** — back these up and you've backed up
+Your data lives in **two Docker volumes** - back these up and you've backed up
 everything:
 
 | Volume | Contents |
@@ -414,7 +414,7 @@ docker compose exec db pg_dump -U balance balance > balance-backup.sql
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 A TypeScript monorepo using **npm workspaces**:
 
@@ -431,27 +431,27 @@ balance/
 
 **Tech stack**
 
-- **Frontend** — React 19, Vite, Tailwind CSS 4, Radix UI, lucide-react, React Router 7
-- **Backend** — Express 5, Drizzle ORM, PostgreSQL 16, argon2id, JWT, Zod
-- **Shared** — End-to-end type safety via shared TypeScript types + Zod schemas
+- **Frontend** - React 19, Vite, Tailwind CSS 4, Radix UI, lucide-react, React Router 7
+- **Backend** - Express 5, Drizzle ORM, PostgreSQL 16, argon2id, JWT, Zod
+- **Shared** - End-to-end type safety via shared TypeScript types + Zod schemas
 
 > In production a **single container** serves both the API and the built SPA on
-> one port — no separate web server to manage.
+> one port, no separate web server to manage.
 >
 > **Health checks** (no auth required):
 >
 > | Endpoint | Purpose | Status codes |
 > | --- | --- | --- |
-> | `GET /healthz`, `/health/live` | Liveness — process is up (no dependencies) | `200` |
-> | `GET /readyz`, `/health/ready` | Readiness — database reachable (gates traffic) | `200` / `503` |
-> | `GET /health` | Full report — DB, storage & memory with per-check latency, plus version/uptime/runtime | `200` (healthy/degraded) / `503` (critical failure) |
+> | `GET /healthz`, `/health/live` | Liveness - process is up (no dependencies) | `200` |
+> | `GET /readyz`, `/health/ready` | Readiness - database reachable (gates traffic) | `200` / `503` |
+> | `GET /health` | Full report - DB, storage & memory with per-check latency, plus version/uptime/runtime | `200` (healthy/degraded) / `503` (critical failure) |
 >
-> The full report's overall `status` is `pass`, `warn` (degraded but usable —
+> The full report's overall `status` is `pass`, `warn` (degraded but usable,
 > e.g. slow DB or non-writable storage), or `fail` (a critical check is down).
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## FAQ & Troubleshooting
 
 <details>
 <summary><b>The app won't start / can't connect to the database</b></summary>
@@ -472,7 +472,7 @@ that you've run `npm run db:migrate`.
 <br/>
 
 Signups are **invite-only by default**. As the admin, open the portal to send
-invitations — or flip the setting to allow open signups.
+invitations - or flip the setting to allow open signups.
 </details>
 
 <details>
@@ -490,9 +490,9 @@ emailed. Set the `SMTP_*` variables to send real emails.
 <br/>
 
 Only if you configure it to. The assistant is **disabled by default** and requires
-you to add an AI provider in **Settings → AI Assistant**. When you do send a
+you to add an AI provider in **Settings -> AI Assistant**. When you do send a
 message, your financial summary is sent from *your own server* to whichever
-provider you chose (OpenAI, Anthropic, Ollama, etc.) — nothing goes anywhere
+provider you chose (OpenAI, Anthropic, Ollama, etc.) - nothing goes anywhere
 without your explicit setup. If you use a local model (Ollama / LM Studio), data
 never leaves your machine at all.
 </details>
@@ -510,7 +510,7 @@ Set `APP_PORT` in `.env` (Docker), e.g. `APP_PORT=8080`, then
 
 <div align="center">
 
-**Balance** — own your finances. 💚
+**Balance** - own your finances.
 
 <sub>Self-hosted with care. Your data never leaves your server.</sub>
 

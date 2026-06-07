@@ -1,4 +1,4 @@
-# Balance — Personal Income & Expense Tracker (frontend)
+# Balance - Personal Income & Expense Tracker (frontend)
 
 A self-hosted personal finance tracker, implemented from the Claude Design
 handoff bundle. Built with **Vite + React + Tailwind CSS v4 + shadcn/ui**.

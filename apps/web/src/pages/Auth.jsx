@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { apiPost } from '../lib/api.js';
-import { Scales, Eye } from '@phosphor-icons/react';
+import { Eye } from '@phosphor-icons/react';
 
-const Logo = ({ stroke = '#fff' }) => <Scales color={stroke} weight="bold" />;
+const Logo = () => <img src="/logo.svg" alt="" />;
 
 export default function Auth() {
   const { status, login, signup, setup } = useAuth();

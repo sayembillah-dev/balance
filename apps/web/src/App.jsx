@@ -18,10 +18,11 @@ import Budgets from './pages/Budgets.jsx';
 import Settings from './pages/Settings.jsx';
 import Admin from './pages/Admin.jsx';
 import AddTxn from './components/AddTxn.jsx';
+import TxnDetail from './components/TxnDetail.jsx';
 import AiChat from './components/AiChat.jsx';
 import {
   SquaresFour, Receipt, CreditCard, Stack, Tag, PiggyBank, HandCoins, Note, ChartDonut,
-  Gear, ShieldCheck, Scales, SidebarSimple, SignOut, List, MagnifyingGlass, Plus, Sparkle,
+  Gear, ShieldCheck, SidebarSimple, SignOut, List, MagnifyingGlass, Plus, Sparkle,
   Clock as ClockIcon,
 } from '@phosphor-icons/react';
 
@@ -158,7 +159,7 @@ export default function App() {
           <div className="brand">
             <div className="brand-logo">
               <span className="brand-mark">
-                <Scales color="#fff" weight="bold" />
+                <img src="/logo.svg" alt="" />
               </span>
               <span className="brand-name">Balance</span>
             </div>
@@ -243,6 +244,7 @@ export default function App() {
       </div>
 
       <AddTxn />
+      <TxnDetail />
       <AiChat />
     </>
   );

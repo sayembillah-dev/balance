@@ -2,11 +2,12 @@
    Two tabs: Receivables (money owed to you) and Payables (money you owe).
    Create / edit / delete, mark settled / unmark, totals. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, DotsThreeVertical, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const PIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const PI = {
-  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash, check: Check,
+  plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash, check: Check,
   undo: ArrowCounterClockwise, in: ArrowDownLeft, out: ArrowUpRight, clock: Clock, wallet: Wallet,
 };
 const STORE = 'balance.payrecv.v1';

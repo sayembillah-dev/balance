@@ -3,11 +3,12 @@
    (count toward category too) or Isolated tracking. */
 import React, { useState, useEffect, useRef } from 'react';
 import Select from '../components/Select.jsx';
-import { Plus, X, DotsThreeVertical, PencilSimple, Trash, SquaresFour, Tag, Wallet } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, SquaresFour, Tag, Wallet } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const B = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const BI = {
-  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash,
   grid: SquaresFour, tag: Tag, wallet: Wallet,
 };
 const STORE = 'balance.budgets.v1';

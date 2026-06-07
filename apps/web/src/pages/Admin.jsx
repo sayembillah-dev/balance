@@ -4,12 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
-import { Users, Envelope, SlidersHorizontal } from '@phosphor-icons/react';
+import { Users, Envelope, SlidersHorizontal, Copy, Check } from '@phosphor-icons/react';
 
 const G = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
-const GI = {
-  users: Users, mail: Envelope, sliders: SlidersHorizontal,
-};
+const GI = { users: Users, mail: Envelope, sliders: SlidersHorizontal };
 const TABS = [
   { id: 'users', icon: GI.users, label: 'Users' },
   { id: 'invites', icon: GI.mail, label: 'Invitations' },
@@ -17,6 +15,49 @@ const TABS = [
 ];
 
 const fmtDate = (s) => window.BAL.fmtDate(s);
+
+const Badge = ({ label, variant = 'default' }) => {
+  const map = {
+    admin:    { background: 'var(--primary-soft)', color: 'var(--primary-ink)' },
+    user:     { background: 'var(--bg)', color: 'var(--ink-3)', border: '1px solid var(--border)' },
+    active:   { background: '#dcfce7', color: '#15803d' },
+    inactive: { background: '#fee2e2', color: '#dc2626' },
+    pending:  { background: '#fef9c3', color: '#854d0e' },
+    accepted: { background: '#dcfce7', color: '#15803d' },
+    expired:  { background: '#fee2e2', color: '#dc2626' },
+    default:  { background: 'var(--bg)', color: 'var(--ink-2)' },
+  };
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+      ...(map[variant] || map.default),
+    }}>{label}</span>
+  );
+};
+
+const Toggle = ({ checked, onChange }) => (
+  <button
+    type="button" role="switch" aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    style={{
+      width: 44, height: 24, borderRadius: 12, border: 'none',
+      cursor: 'pointer', flexShrink: 0, padding: 0, position: 'relative',
+      background: checked ? 'var(--primary)' : 'var(--border)',
+      transition: 'background 0.2s ease',
+    }}
+  >
+    <span style={{
+      display: 'block', width: 18, height: 18, borderRadius: 9, background: '#fff',
+      position: 'absolute', top: 3, left: checked ? 23 : 3,
+      transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    }} />
+  </button>
+);
+
+const SmBtn = ({ style, ...props }) => (
+  <button className="btn-ghost" style={{ height: 30, fontSize: 12, padding: '0 10px', ...style }} {...props} />
+);
 
 export default function Admin() {
   const { user } = useAuth();
@@ -27,6 +68,7 @@ export default function Admin() {
   const [err, setErr] = useState('');
   const [newInvite, setNewInvite] = useState({ email: '', role: 'user', expiresInDays: 7 });
   const [lastLink, setLastLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const guard = (fn) => async (...a) => {
     setErr('');
@@ -39,7 +81,6 @@ export default function Admin() {
 
   useEffect(() => { loadUsers(); loadInvites(); loadSettings(); }, [loadUsers, loadInvites, loadSettings]);
 
-  // ── user actions ─────────────────────────────────────────────────────────
   const setRole = guard(async (u, role) => { await apiPatch(`/admin/users/${u.id}`, { role }); loadUsers(); });
   const setActive = guard(async (u, isActive) => { await apiPatch(`/admin/users/${u.id}`, { isActive }); loadUsers(); });
   const forceLogout = guard(async (u) => { await apiPost(`/admin/users/${u.id}/logout`, {}); });
@@ -54,20 +95,31 @@ export default function Admin() {
     await apiDelete(`/admin/users/${u.id}`); loadUsers();
   });
 
-  // ── invitations ──────────────────────────────────────────────────────────
   const createInvite = guard(async (e) => {
     e.preventDefault();
     const body = { role: newInvite.role, expiresInDays: Number(newInvite.expiresInDays) };
     if (newInvite.email.trim()) body.email = newInvite.email.trim();
     const res = await apiPost('/admin/invitations', body);
     setLastLink(window.location.origin + res.invitePath);
+    setCopied(false);
     setNewInvite({ email: '', role: 'user', expiresInDays: 7 });
     loadInvites();
   });
   const revokeInvite = guard(async (i) => { await apiDelete(`/admin/invitations/${i.id}`); loadInvites(); });
 
-  // ── settings ─────────────────────────────────────────────────────────────
+  const copyLink = () => {
+    navigator.clipboard?.writeText(lastLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const saveSettings = guard(async (patch) => setSettings(await apiPatch('/admin/settings', patch)));
+
+  const inviteStatus = (i) => {
+    if (i.acceptedAt) return 'accepted';
+    if (new Date(i.expiresAt) < new Date()) return 'expired';
+    return 'pending';
+  };
 
   return (
     <div>
@@ -88,34 +140,44 @@ export default function Admin() {
 
       {err && <p style={{ color: '#dc2626', margin: '0 0 12px' }}>{err}</p>}
 
+      {/* ── Users ── */}
       {tab === 'users' && (
         <div className="txn-card">
           <div className="txn-tablewrap">
             <table className="txn-table">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th>
+                </tr>
+              </thead>
               <tbody>
                 {users.map((u) => {
                   const self = u.id === user?.id;
                   return (
                     <tr key={u.id}>
-                      <td>{u.name}{self && <span style={{ opacity: 0.5 }}> (you)</span>}</td>
-                      <td>{u.email}</td>
-                      <td>{u.role}</td>
-                      <td>{u.isActive ? 'Active' : 'Inactive'}</td>
-                      <td>{fmtDate(u.createdAt)}</td>
-                      <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {!self && (
-                          <>
-                            <button className="btn-ghost" onClick={() => setRole(u, u.role === 'admin' ? 'user' : 'admin')}>
+                      <td>
+                        {u.name}
+                        {self && <span style={{ opacity: 0.45, fontSize: 12, marginLeft: 4 }}>(you)</span>}
+                      </td>
+                      <td style={{ color: 'var(--ink-2)' }}>{u.email}</td>
+                      <td><Badge label={u.role === 'admin' ? 'Admin' : 'User'} variant={u.role} /></td>
+                      <td><Badge label={u.isActive ? 'Active' : 'Inactive'} variant={u.isActive ? 'active' : 'inactive'} /></td>
+                      <td style={{ color: 'var(--ink-2)' }}>{fmtDate(u.createdAt)}</td>
+                      <td>
+                        {self ? (
+                          <span style={{ color: 'var(--ink-3)', fontSize: 13 }}>—</span>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <SmBtn onClick={() => setRole(u, u.role === 'admin' ? 'user' : 'admin')}>
                               {u.role === 'admin' ? 'Make user' : 'Make admin'}
-                            </button>
-                            <button className="btn-ghost" onClick={() => setActive(u, !u.isActive)}>
+                            </SmBtn>
+                            <SmBtn onClick={() => setActive(u, !u.isActive)}>
                               {u.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button className="btn-ghost" onClick={() => setPassword(u)}>Set password</button>
-                            <button className="btn-ghost" onClick={() => forceLogout(u)}>Sign out</button>
-                            <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={() => delUser(u)}>Delete</button>
-                          </>
+                            </SmBtn>
+                            <SmBtn onClick={() => setPassword(u)}>Set password</SmBtn>
+                            <SmBtn onClick={() => forceLogout(u)}>Sign out</SmBtn>
+                            <SmBtn style={{ color: '#dc2626' }} onClick={() => delUser(u)}>Delete</SmBtn>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -127,58 +189,138 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ── Invitations ── */}
       {tab === 'invites' && (
         <div className="txn-card">
-          <form className="field" onSubmit={createInvite} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
-            <div><label>Email (optional)</label><input className="txn-field" type="email" placeholder="anyone@example.com"
-              value={newInvite.email} onChange={(e) => setNewInvite({ ...newInvite, email: e.target.value })} /></div>
-            <div><label>Role</label><Select value={newInvite.role} onChange={(v) => setNewInvite({ ...newInvite, role: v })} ariaLabel="Invite role"
-              options={[{ value: 'user', label: 'User' }, { value: 'admin', label: 'Admin' }]} /></div>
-            <div><label>Expires (days)</label><input className="txn-field" type="number" min="1" max="90" style={{ width: 90 }}
-              value={newInvite.expiresInDays} onChange={(e) => setNewInvite({ ...newInvite, expiresInDays: e.target.value })} /></div>
-            <button className="btn-primary" type="submit">Create invite</button>
-          </form>
+          <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 20 }}>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink-2)' }}>
+              Generate a shareable invite link. If an email is provided, only that address can use it.
+            </p>
+            <form onSubmit={createInvite}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 120px', gap: 12, marginBottom: 12 }}>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Email (optional)</label>
+                  <input className="txn-field" type="email" placeholder="anyone@example.com"
+                    value={newInvite.email}
+                    onChange={(e) => setNewInvite({ ...newInvite, email: e.target.value })} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Role</label>
+                  <Select value={newInvite.role} onChange={(v) => setNewInvite({ ...newInvite, role: v })}
+                    ariaLabel="Invite role"
+                    options={[{ value: 'user', label: 'User' }, { value: 'admin', label: 'Admin' }]} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Expires (days)</label>
+                  <input className="txn-field" type="number" min="1" max="90"
+                    value={newInvite.expiresInDays}
+                    onChange={(e) => setNewInvite({ ...newInvite, expiresInDays: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn-primary" type="submit">Create invite</button>
+              </div>
+            </form>
+          </div>
 
           {lastLink && (
-            <div style={{ background: 'var(--card-2,#f1f5f9)', padding: 12, borderRadius: 10, marginBottom: 16, wordBreak: 'break-all' }}>
-              <b>Invite link</b> (shown once):<br />{lastLink}{' '}
-              <button className="btn-ghost" onClick={() => navigator.clipboard?.writeText(lastLink)}>Copy</button>
+            <div style={{
+              background: 'var(--primary-soft)', borderRadius: 10, padding: '14px 16px',
+              marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14,
+              border: '1px solid color-mix(in srgb, var(--primary) 25%, transparent)',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 600, color: 'var(--primary-ink)' }}>
+                  Invite link ready
+                </p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-2)', wordBreak: 'break-all' }}>{lastLink}</p>
+              </div>
+              <button className="btn-ghost" onClick={copyLink}
+                style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {copied
+                  ? <><Check size={14} weight="bold" /> Copied</>
+                  : <><Copy size={14} /> Copy</>}
+              </button>
             </div>
           )}
 
           <div className="txn-tablewrap">
             <table className="txn-table">
-              <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+              <thead>
+                <tr><th>Email</th><th>Role</th><th>Expires</th><th>Status</th><th></th></tr>
+              </thead>
               <tbody>
-                {invites.map((i) => (
-                  <tr key={i.id}>
-                    <td>{i.email || '(any)'}</td>
-                    <td>{i.role}</td>
-                    <td>{fmtDate(i.expiresAt)}</td>
-                    <td>{i.acceptedAt ? 'Accepted' : new Date(i.expiresAt) < new Date() ? 'Expired' : 'Pending'}</td>
-                    <td>{!i.acceptedAt && <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={() => revokeInvite(i)}>Revoke</button>}</td>
+                {invites.map((i) => {
+                  const status = inviteStatus(i);
+                  return (
+                    <tr key={i.id}>
+                      <td>
+                        {i.email || <span style={{ color: 'var(--ink-3)', fontStyle: 'italic' }}>Any user</span>}
+                      </td>
+                      <td><Badge label={i.role === 'admin' ? 'Admin' : 'User'} variant={i.role} /></td>
+                      <td style={{ color: 'var(--ink-2)' }}>{fmtDate(i.expiresAt)}</td>
+                      <td>
+                        <Badge
+                          label={status.charAt(0).toUpperCase() + status.slice(1)}
+                          variant={status}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {status === 'pending' && (
+                          <SmBtn style={{ color: '#dc2626' }} onClick={() => revokeInvite(i)}>Revoke</SmBtn>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!invites.length && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--ink-3)' }}>
+                      No invitations yet. Create one above to get started.
+                    </td>
                   </tr>
-                ))}
-                {!invites.length && <tr><td colSpan={5} style={{ opacity: 0.6 }}>No invitations yet.</td></tr>}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
+      {/* ── Instance settings ── */}
       {tab === 'settings' && (
-        <div className="txn-card" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
-          <div className="field">
-            <label>Instance name</label>
-            <input className="txn-field" value={settings.instanceName || ''}
-              onChange={(e) => setSettings({ ...settings, instanceName: e.target.value })}
-              onBlur={() => saveSettings({ instanceName: settings.instanceName })} />
+        <div style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="txn-card" style={{ padding: '20px 24px' }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600 }}>Instance name</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink-2)' }}>
+              Shown across the app and in invitation emails.
+            </p>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <div className="field" style={{ flex: 1, margin: 0 }}>
+                <label>Name</label>
+                <input className="txn-field" value={settings.instanceName || ''}
+                  onChange={(e) => setSettings({ ...settings, instanceName: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && saveSettings({ instanceName: settings.instanceName })} />
+              </div>
+              <button className="btn-primary" onClick={() => saveSettings({ instanceName: settings.instanceName })}>
+                Save
+              </button>
+            </div>
           </div>
-          <label style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }}>
-            <input type="checkbox" checked={!!settings.allowOpenSignups}
-              onChange={(e) => saveSettings({ allowOpenSignups: e.target.checked })} />
-            <span><b>Allow open sign-ups</b><br /><span style={{ opacity: 0.6, fontSize: 13 }}>When off, new users can only join via an invitation link.</span></span>
-          </label>
+
+          <div className="txn-card" style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600 }}>Open sign-ups</h3>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-2)' }}>
+                  Allow anyone to create an account. When off, new users can only join via an invitation link.
+                </p>
+              </div>
+              <Toggle
+                checked={!!settings.allowOpenSignups}
+                onChange={(v) => saveSettings({ allowOpenSignups: v })}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

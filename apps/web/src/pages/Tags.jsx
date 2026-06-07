@@ -3,11 +3,12 @@
    open a tag to see its transactions + totals. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
-import { Plus, ArrowLeft, X, DotsThreeVertical, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
+import { Plus, ArrowLeft, X, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const GIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const GI = {
-  plus: Plus, back: ArrowLeft, x: X, kebab: DotsThreeVertical, edit: PencilSimple,
+  plus: Plus, back: ArrowLeft, x: X, kebab: ThreeDots, edit: PencilSimple,
   trash: Trash, search: MagnifyingGlass, arrow: ArrowDown, prev: CaretLeft, next: CaretRight,
   in: ArrowDownLeft, out: ArrowUpRight, list: ListBullets,
 };

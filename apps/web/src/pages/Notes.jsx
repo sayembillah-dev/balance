@@ -1,10 +1,11 @@
 /* Balance — Notes. Create / edit / delete simple notes or to-do lists. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, DotsThreeVertical, PencilSimple, Trash, Check, Note, ListChecks } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, Check, Note, ListChecks } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const NIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const NI = {
-  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash,
   check: Check, note: Note, todo: ListChecks,
 };
 const STORE = 'balance.notes.v1';

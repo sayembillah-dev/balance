@@ -3,11 +3,12 @@
    balance/income/spent and a searchable, sortable, filterable transaction list. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
-import { Bank, CreditCard, Wallet, Money, Buildings, PiggyBank, DeviceMobile, CurrencyBtc, Plus, ArrowLeft, X, DotsThreeVertical, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
+import { Bank, CreditCard, Wallet, Money, Buildings, PiggyBank, DeviceMobile, CurrencyBtc, Plus, ArrowLeft, X, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const AIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const AI = {
-  plus: Plus, back: ArrowLeft, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  plus: Plus, back: ArrowLeft, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash,
   search: MagnifyingGlass, arrow: ArrowDown, prev: CaretLeft, next: CaretRight, wallet: Wallet,
   in: ArrowDownLeft, out: ArrowUpRight, list: ListBullets,
 };

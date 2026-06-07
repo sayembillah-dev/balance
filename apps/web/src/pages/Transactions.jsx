@@ -3,11 +3,12 @@
    Responsive: table on wide containers, card list on narrow (mobile/tablet). */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
-import { MagnifyingGlass, Plus, X, ArrowDown, DotsThreeVertical, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, X, ArrowDown, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const TIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const TI = {
-  search: MagnifyingGlass, plus: Plus, x: X, arrow: ArrowDown, kebab: DotsThreeVertical,
+  search: MagnifyingGlass, plus: Plus, x: X, arrow: ArrowDown, kebab: ThreeDots,
   edit: PencilSimple, copy: Copy, bookmark: BookmarkSimple, trash: Trash,
   prev: CaretLeft, next: CaretRight, filter: FunnelSimple,
 };

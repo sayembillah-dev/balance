@@ -2,11 +2,12 @@
    A savings pool funds virtual goal envelopes.
    Unallocated = pool − Σ goal.saved. Create/edit goals, adjust pool, quick-allocate. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, DotsThreeVertical, PencilSimple, Trash, Stack, HandCoins, Sparkle, CalendarBlank, Gauge, TrendUp, Check, Warning, Target } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, Stack, HandCoins, Sparkle, CalendarBlank, Gauge, TrendUp, Check, Warning, Target } from '@phosphor-icons/react';
+import ThreeDots from '../components/ThreeDots.jsx';
 
 const S = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const SI = {
-  plus: Plus, x: X, kebab: DotsThreeVertical, edit: PencilSimple, trash: Trash,
+  plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash,
   pool: Stack, alloc: HandCoins, spark: Sparkle, cal: CalendarBlank, gauge: Gauge,
   up: TrendUp, check: Check, warn: Warning, target: Target,
 };

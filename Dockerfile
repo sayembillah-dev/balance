@@ -35,6 +35,10 @@ ENV NODE_ENV=production \
 # addon, all dist output, and the drizzle migrations).
 COPY --from=builder /app /app
 
+# Drop devDependencies (TypeScript, Vite, drizzle-kit, tsx, vitest, @types/*, …)
+# — they have no role at runtime and roughly triple the layer size.
+RUN npm prune --omit=dev
+
 EXPOSE 4000
 
 # Container health: poll the readiness probe (DB reachable). Uses Node's global

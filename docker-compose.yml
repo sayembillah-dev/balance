@@ -17,6 +17,7 @@ services:
       retries: 12
 
   app:
+    image: ghcr.io/sayembillah-dev/balance:latest
     build: .
     restart: unless-stopped
     depends_on:

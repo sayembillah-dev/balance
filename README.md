@@ -11,12 +11,13 @@ no cloud you don't control. Spin it up with one command and own your finances.
 <br/>
 
 ![Self-hosted](https://img.shields.io/badge/self--hosted-100%25-22c55e?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Node](https://img.shields.io/badge/Node-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-sayembillah--dev%2Fbalance-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/sayembillah-dev/balance/pkgs/container/balance)
+![Node](https://img.shields.io/badge/Node-22-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 
-[**Deploy with Docker**](#-deploy-with-docker-compose-step-by-step) ·
+[**Quick Deploy**](#-quick-deploy-no-source-needed) ·
+[**Full Setup Guide**](#-deploy-with-docker-compose-step-by-step) ·
 [**Run Locally**](#-run-locally-development) ·
 [**Configuration**](#-configuration) ·
 [**FAQ**](#-faq--troubleshooting)
@@ -48,6 +49,61 @@ Everything you need to track your money — and nothing you don't.
 
 ---
 
+## ⚡ Quick Deploy (no source needed)
+
+**No `git clone` required.** Copy the snippet below into a file called
+`docker-compose.yml`, then run two commands — that's it.
+
+```yaml
+# docker-compose.yml — save this file, nothing else needed
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-balance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-balance}
+      POSTGRES_DB: ${POSTGRES_DB:-balance}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-balance}"]
+      interval: 5s
+      retries: 12
+
+  app:
+    image: ghcr.io/sayembillah-dev/balance:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-balance}:${POSTGRES_PASSWORD:-balance}@db:5432/${POSTGRES_DB:-balance}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${APP_PORT:-4000}:4000"
+    volumes:
+      - appdata:/data
+
+volumes:
+  pgdata:
+  appdata:
+```
+
+```bash
+docker compose pull          # pull the latest image from ghcr.io
+docker compose up -d         # start in the background
+```
+
+Open **http://localhost:4000** — the first boot shows the setup wizard.
+
+> **Want to change the port or DB password?** Create an `.env` file next to
+> `docker-compose.yml` (see [Configuration](#-configuration)).
+
+---
+
 ## 🐳 Deploy with Docker Compose (Step by Step)
 
 New to Docker? No problem. Follow these steps exactly and you'll have Balance
@@ -67,19 +123,25 @@ docker compose version
 > ℹ️ Modern Docker uses `docker compose` (a space). If you have an older setup
 > that only has `docker-compose` (a hyphen), use that form instead everywhere below.
 
-### Step 1 — Get the project onto your machine
+### Step 1 — Get the compose file
 
-Either clone it with git, or download the ZIP from your repo host and unzip it.
-Then move into the folder:
+**Option A — published image (recommended, no source needed)**
+
+Create an empty folder, save the compose snippet from the
+[Quick Deploy](#-quick-deploy-no-source-needed) section above as
+`docker-compose.yml` inside it, then move into that folder. You are now ready
+for Step 2. You do *not* need the `Dockerfile`, source code, or `.env.example`.
+
+**Option B — build from source**
+
+Clone the repo if you want to build the image yourself or hack on the code:
 
 ```bash
-git clone <your-repo-url> balance
+git clone https://github.com/sayembillah-dev/balance.git balance
 cd balance
 ```
 
-You should now be **inside the `balance/` folder** — the one that contains
-`docker-compose.yml`, `Dockerfile`, and `.env.example`. Every command below is
-run from here. Check you're in the right place:
+Every command below is run from this folder. Check you're in the right place:
 
 ```bash
 ls
@@ -184,22 +246,30 @@ containers. You can stop, rebuild, or update the app and your data stays put.
 
 ### Step 5 — Start it 🚀
 
-From inside the `balance/` folder, run:
+**Option A — published image**
 
 ```bash
-docker compose up -d
+docker compose pull          # fetch the latest Balance image from ghcr.io
+docker compose up -d         # start everything in the background
 ```
 
-The **first** run takes a few minutes — Docker downloads Postgres and **builds the
-app image** from the `Dockerfile`. On this first boot it automatically:
+**Option B — build from source**
 
-1. 📥 Pulls the PostgreSQL image and starts the database
-2. 🔨 Builds the Balance app image
-3. 🗃️ Applies all database migrations (creates the tables)
-4. 🌐 Starts serving the app
+```bash
+docker compose up -d --build
+```
 
-> The `-d` means "detached" — it runs in the background. Drop it
-> (`docker compose up`) if you'd rather watch the logs live in your terminal.
+The first `--build` run takes a few minutes (compiles the full app). After that,
+omit `--build` for fast restarts.
+
+On the very first boot Balance automatically:
+
+1. 📥 Pulls / uses the PostgreSQL image and starts the database
+2. 🗃️ Applies all database migrations (creates the tables)
+3. 🌐 Starts serving the app
+
+> The `-d` means "detached" — it runs in the background. Drop it if you'd rather
+> watch the logs live in your terminal.
 
 ### Step 6 — Open Balance 🎉
 
@@ -222,7 +292,12 @@ docker compose logs -f app     # Just the app's logs
 docker compose restart app     # Restart only the app
 docker compose stop            # Pause everything (data kept)
 docker compose down            # Stop & remove containers (data kept in volumes)
-docker compose up -d --build   # Rebuild & restart after pulling new code
+
+# Update to the latest published image
+docker compose pull && docker compose up -d
+
+# Rebuild & restart from source (Option B users)
+docker compose up -d --build
 ```
 
 > ⚠️ **Careful:** `docker compose down -v` adds `-v`, which **deletes the volumes

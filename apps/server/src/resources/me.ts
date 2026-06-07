@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { eq, sql, and } from 'drizzle-orm';
+import { z } from 'zod';
 import {
   profileUpdateSchema, settingsUpdateSchema, dashboardSchema, changePasswordSchema,
   aiSettingsUpdateSchema, aiSettingsTestSchema, aiModelsRequestSchema,
@@ -13,6 +14,7 @@ import { hashPassword, verifyPassword } from '../auth/passwords.js';
 import { notFound, unauthorized, forbidden } from '../lib/errors.js';
 import { testAiConnection } from '../lib/ai-probe.js';
 import { fetchModels } from '../lib/ai-models.js';
+import { completeAi } from '../lib/ai-complete.js';
 
 export const meRouter: Router = Router();
 
@@ -252,4 +254,36 @@ meRouter.delete('/ai-models/:id', async (req, res) => {
     .set({ activeModelId: null, updatedAt: new Date() })
     .where(and(eq(aiSettings.userId, userId), eq(aiSettings.activeModelId, id)));
   res.json({ ok: true });
+});
+
+// ── AI chat completion ────────────────────────────────────────────────────────
+
+meRouter.post('/ai-chat', async (req, res) => {
+  const userId = authedUserId(req);
+  const { prompt } = z.object({ prompt: z.string().min(1).max(50_000) }).parse(req.body);
+
+  const aiRow = await db.query.aiSettings.findFirst({ where: eq(aiSettings.userId, userId) });
+  if (!aiRow?.enabled) {
+    return res.status(400).json({ error: 'AI is not enabled. Turn it on in Settings → AI Assistant.' });
+  }
+  if (!aiRow.activeModelId) {
+    return res.status(400).json({ error: 'No AI model selected. Go to Settings → AI Assistant to choose one.' });
+  }
+
+  const modelRow = await db.query.aiModels.findFirst({
+    where: and(eq(aiModels.id, aiRow.activeModelId), eq(aiModels.userId, userId)),
+  });
+  if (!modelRow) {
+    return res.status(400).json({ error: 'Selected AI model not found. Re-select a model in Settings → AI Assistant.' });
+  }
+
+  let creds: Record<string, string> = {};
+  try { creds = JSON.parse(modelRow.encryptedCredentials); } catch { /* use empty */ }
+
+  try {
+    const text = await completeAi(modelRow.provider as AiProviderType, creds, prompt);
+    res.json({ text: text || '' });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : 'AI request failed' });
+  }
 });

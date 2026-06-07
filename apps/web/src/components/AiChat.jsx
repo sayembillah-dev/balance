@@ -3,12 +3,13 @@
    grounded in the user's real data (window.BAL) via window.claude.complete,
    and can suggest actions that trigger existing app flows. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkle, X, PaperPlaneTilt, ChartLineUp, MagnifyingGlass, Target, Bell, Plus, ArrowRight } from '@phosphor-icons/react';
+import { Sparkle, X, PaperPlaneTilt, ChartLineUp, MagnifyingGlass, Target, Bell, Plus, ArrowRight, GearSix } from '@phosphor-icons/react';
+import { apiPost, apiGet } from '../lib/api.js';
 
 const A = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const AI = {
   spark: Sparkle, x: X, send: PaperPlaneTilt, chart: ChartLineUp, search: MagnifyingGlass,
-  target: Target, bell: Bell, plus: Plus, arrow: ArrowRight,
+  target: Target, bell: Bell, plus: Plus, arrow: ArrowRight, gear: GearSix,
 };
 
 const inr = (n) => window.BAL.fmt(n);
@@ -74,8 +75,16 @@ function Chat({ onClose }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  // null = checking, true = ready, false = not configured
+  const [aiReady, setAiReady] = useState(null);
   const bodyRef = useRef(null);
   const taRef = useRef(null);
+
+  useEffect(() => {
+    apiGet('/me/ai-settings')
+      .then((d) => setAiReady(!!(d.enabled && d.activeModelId)))
+      .catch(() => setAiReady(false));
+  }, []);
 
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, busy]);
   useEffect(() => { const onKey = (e) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [onClose]);
@@ -87,13 +96,14 @@ function Chat({ onClose }) {
     setMsgs(history); setInput(''); setBusy(true);
     if (taRef.current) taRef.current.style.height = 'auto';
     const convo = history.map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
-    const prompt = `You are "Balance Assistant", a warm, concise personal-finance helper inside the Balance app. Today is 30 June 2025. Answer ONLY from the DATA below — never invent numbers. Use the ${window.BAL.sym()} symbol for money. Keep replies short: 1–4 sentences or a tight bullet list. If the user clearly wants to record a transaction, move money to a goal, check a budget, or settle a due, suggest it by adding a tag on its OWN final line: [ACTION:add], [ACTION:allocate], [ACTION:budget], or [ACTION:pay]. Only add an action tag when it genuinely helps.\n\nDATA:\n${buildContext()}\n\nConversation:\n${convo}\nAssistant:`;
+    const prompt = `You are "Balance Assistant", a warm, concise personal-finance helper inside the Balance app. Today is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Answer ONLY from the DATA below — never invent numbers. Use the ${window.BAL.sym()} symbol for money. Keep replies short: 1–4 sentences or a tight bullet list. If the user clearly wants to record a transaction, move money to a goal, check a budget, or settle a due, suggest it by adding a tag on its OWN final line: [ACTION:add], [ACTION:allocate], [ACTION:budget], or [ACTION:pay]. Only add an action tag when it genuinely helps.\n\nDATA:\n${buildContext()}\n\nConversation:\n${convo}\nAssistant:`;
     try {
-      const raw = await window.claude.complete(prompt);
-      const { clean, actions } = parseActions(raw || 'Sorry, I could not work that out.');
+      const res = await apiPost('/me/ai-chat', { prompt });
+      if (res.error) throw new Error(res.error);
+      const { clean, actions } = parseActions(res.text || 'Sorry, I could not work that out.');
       setMsgs((m) => [...m, { role: 'ai', text: clean || 'Done.', actions }]);
     } catch (e) {
-      setMsgs((m) => [...m, { role: 'ai', text: 'Sorry — I had trouble reaching the assistant. Please try again.' }]);
+      setMsgs((m) => [...m, { role: 'ai', text: e?.message || 'Sorry — something went wrong. Please try again.', isErr: true }]);
     }
     setBusy(false);
   };
@@ -122,20 +132,37 @@ function Chat({ onClose }) {
           {msgs.length === 0 && (
             <div className="ai-empty">
               <span className="orb"><A d={AI.spark} fill /></span>
-              <h4>Hi there 👋</h4>
-              <p>Ask me anything about your spending, budgets, accounts or goals.</p>
-              <div className="ai-chips">
-                {SUGGESTIONS.map((s) => (
-                  <button className="ai-chip" key={s.text} onClick={() => send(s.text)}><A d={s.icon} />{s.text}</button>
-                ))}
-              </div>
+              {aiReady === false ? (
+                <>
+                  <h4>AI not configured</h4>
+                  <p>Add an AI model in Settings to start chatting.</p>
+                  <button className="ai-chip" onClick={() => {
+                    onClose();
+                    // Navigate to AI settings tab
+                    setTimeout(() => {
+                      const el = document.querySelector('.nav-item[data-key="settings"]');
+                      if (el) el.click();
+                    }, 100);
+                  }}><A d={AI.gear} />Open AI Settings</button>
+                </>
+              ) : (
+                <>
+                  <h4>Hi there 👋</h4>
+                  <p>Ask me anything about your spending, budgets, accounts or goals.</p>
+                  <div className="ai-chips">
+                    {SUGGESTIONS.map((s) => (
+                      <button className="ai-chip" key={s.text} onClick={() => send(s.text)}><A d={s.icon} />{s.text}</button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {msgs.map((m, i) => (
             <div className={`msg ${m.role}`} key={i}>
               {m.role === 'ai' && <div className="who"><span className="d" />Balance Assistant</div>}
-              <div className="bub">{m.text}</div>
+              <div className={`bub${m.isErr ? ' bub-err' : ''}`}>{m.text}</div>
               {m.actions && m.actions.length > 0 && (
                 <div className="ai-act-row">
                   {m.actions.map((k) => <button className="ai-act" key={k} onClick={() => runAction(k)}><A d={ACTIONS[k].icon} />{ACTIONS[k].label}</button>)}

@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiUpload, apiObjectUrl, apiPost, apiPatch, apiDelete, apiGet } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
-import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug, Brain, Eye, EyeSlash } from '@phosphor-icons/react';
+import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug, Brain, Eye, EyeSlash, X as XIcon } from '@phosphor-icons/react';
 
 // Full IANA timezone list (every zone the runtime knows), each labelled with its
 // current UTC offset. Falls back to a short list on older engines.
@@ -438,10 +438,17 @@ function AiModelModal({ model, onClose, onSave }) {
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
       <div className="lib ai-modal" onMouseDown={(e) => e.stopPropagation()}>
+
+        {/* Header */}
         <div className="lib-head">
-          <div><h3>{isNew ? 'Add AI Model' : 'Edit AI Model'}</h3><p>Configure a provider connection to use in the app.</p></div>
-          <button className="lib-x" onClick={onClose}>×</button>
+          <div>
+            <h3>{isNew ? 'Add AI Model' : 'Edit AI Model'}</h3>
+            <p>Name this connection and enter your provider credentials.</p>
+          </div>
+          <button className="lib-x" onClick={onClose}><XIcon size={16} /></button>
         </div>
+
+        {/* Scrollable body */}
         <div className="ai-modal-body">
           <div className="mf">
             <label className="mf-label">Display name <span className="req">*</span></label>
@@ -467,32 +474,38 @@ function AiModelModal({ model, onClose, onSave }) {
             />
           </div>
 
+          {/* Credentials card — only visible once a provider is chosen */}
           {config && (
-            <>
-              <div className="ai-modal-divider"><span>Credentials</span></div>
-              {config.fields.map(renderField)}
-              <div className="ai-modal-test">
+            <div className="ai-cred-card">
+              <div className="ai-cred-card-head">Credentials</div>
+              <div className="ai-cred-card-body">
+                {config.fields.map(renderField)}
+              </div>
+              <div className="ai-cred-card-foot">
                 <button className="btn-ghost" onClick={doTest} disabled={testLoading}>
                   {testLoading ? 'Testing…' : 'Test connection'}
                 </button>
                 {testResult && (
-                  <span style={{ fontSize: 14, color: testResult.ok ? '#16a34a' : '#c02626', fontWeight: 500 }}>
+                  <span className={testResult.ok ? 'ai-test-ok' : 'ai-test-err'}>
                     {testResult.ok ? '✓ Connected' : `✗ ${testResult.message}`}
                   </span>
                 )}
               </div>
-            </>
+            </div>
           )}
+        </div>
 
-          {saveError && <p style={{ color: '#c02626', margin: '4px 0', fontSize: 14 }}>{saveError}</p>}
-
-          <div className="ai-modal-foot">
+        {/* Sticky footer — always visible outside the scroll area */}
+        <div className="ai-modal-foot">
+          {saveError && <p className="ai-modal-err">{saveError}</p>}
+          <div className="ai-modal-foot-btns">
             <button className="btn-ghost" onClick={onClose}>Cancel</button>
             <button className="btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving…' : isNew ? 'Add model' : 'Save changes'}
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );
@@ -550,7 +563,6 @@ function AiPanel({ d, set, onAiLoad, aiLoaded }) {
             <div className="set-group">
               <div className="ai-empty">
                 <p>No AI models configured yet.</p>
-                <button className="btn-ghost" onClick={openAdd}>+ Add your first AI model</button>
               </div>
             </div>
           ) : (

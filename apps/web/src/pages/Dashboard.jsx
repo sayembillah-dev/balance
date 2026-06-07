@@ -6,6 +6,7 @@ import {
   Wallet, CreditCard, TrendUp, ChartPieSlice, ChartBar, ListBullets, Receipt, Target,
   Gauge, Lightning, Plus, SlidersHorizontal, X, DotsSixVertical, CaretUp, CaretDown,
   ArrowRight, PaperPlaneTilt, HandCoins, ArrowDownLeft, ArrowUpRight, ArrowsLeftRight, Note,
+  CalendarBlank,
 } from '@phosphor-icons/react';
 
 // ---------- tiny icon helper ----------
@@ -16,6 +17,7 @@ const ICONS = {
   plus: Plus, sliders: SlidersHorizontal, x: X, grip: DotsSixVertical, up: CaretUp,
   down: CaretDown, arrow: ArrowRight, send: PaperPlaneTilt, request: HandCoins,
   income: ArrowDownLeft, expense: ArrowUpRight, transfer: ArrowsLeftRight, note: Note,
+  calendar: CalendarBlank,
 };
 const WIcon = ({ k }) => <Ico d={ICONS[k] || ICONS.wallet} />;
 
@@ -151,6 +153,114 @@ function WList({ rows }) {
   );
 }
 
+function GroupedBars({ data }) {
+  const maxV = Math.max(...data.flatMap((d) => [d.inc, d.exp]), 1);
+  return (
+    <div className="wg-body">
+      <div className="gbars">
+        {data.map((d) => (
+          <div className="gbar-col" key={d.label}>
+            <div className="gbar-pair">
+              <div className="gbar inc" style={{ height: `${Math.round((d.inc / maxV) * 100)}%` }} />
+              <div className="gbar exp" style={{ height: `${Math.round((d.exp / maxV) * 100)}%` }} />
+            </div>
+            <small>{d.label}</small>
+          </div>
+        ))}
+      </div>
+      <div className="gbar-legend">
+        <span><i style={{ background: '#15803d' }} />Income</span>
+        <span><i style={{ background: '#c02626' }} />Expenses</span>
+      </div>
+    </div>
+  );
+}
+
+function AccountList({ rows }) {
+  if (!rows.length) return <Empty msg="No accounts yet." />;
+  return (
+    <div className="wg-body">
+      <div className="wlist">
+        {rows.map((r, i) => (
+          <div className="wlist-row" key={i}>
+            <div className="wlist-av" style={{ background: `color-mix(in oklab, ${r.color} 15%, #fff 85%)`, color: `color-mix(in oklab, ${r.color} 80%, #000 20%)` }}>{r.av}</div>
+            <div className="wlist-m"><b>{r.name}</b><span>{r.type}</span></div>
+            <div className="wlist-amt" style={r.neg ? { color: '#c0606a' } : {}}>{r.bal}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AllGoals({ goals }) {
+  if (!goals.length) return <Empty msg="No goals yet — add some in Saving & Goals." />;
+  return (
+    <div className="wg-body">
+      <div className="prog-list">
+        {goals.slice(0, 5).map((g) => (
+          <div className="prog-row" key={g.title}>
+            <div className="prog-top">
+              <span>{g.emoji ? `${g.emoji} ${g.title}` : g.title}</span>
+              <b>{g.pct}%</b>
+            </div>
+            <div className="track"><i style={{ width: `${g.pct}%`, background: g.pct >= 100 ? '#15803d' : 'var(--primary)' }} /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HeatmapCalendar({ days, month, year }) {
+  const maxSpend = Math.max(...days.map((d) => d.spend), 1);
+  const spendMap = new Map(days.map((d) => [d.date, d.spend]));
+  const firstDow = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayStr = window.BAL.today();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({ day: d, date, spend: spendMap.get(date) || 0 });
+  }
+  return (
+    <div className="wg-body">
+      <div className="hmap-head">
+        <b>{MON[month - 1]} {year}</b>
+        <div className="hmap-dow">
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => <span key={d}>{d}</span>)}
+        </div>
+      </div>
+      <div className="hmap-grid">
+        {cells.map((c, i) => {
+          if (!c) return <div key={`p${i}`} className="hmap-cell hmap-pad" />;
+          const pct = c.spend > 0 ? Math.max(14, Math.round((c.spend / maxSpend) * 72)) : 0;
+          return (
+            <div
+              key={c.date}
+              className={`hmap-cell${c.date === todayStr ? ' hmap-today' : ''}`}
+              style={pct > 0 ? { background: `color-mix(in oklab, var(--primary) ${pct}%, var(--surface) ${100 - pct}%)` } : undefined}
+              title={c.spend > 0 ? `${c.day} ${MON[month - 1]}: ${inr(c.spend)}` : String(c.day)}
+            >
+              <span>{c.day}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="hmap-scale">
+        <span>Less</span>
+        <div className="hmap-dots">
+          {[0, 16, 32, 52, 72].map((p) => (
+            <i key={p} style={p > 0 ? { background: `color-mix(in oklab, var(--primary) ${p}%, var(--surface) ${100 - p}%)` } : { background: 'var(--border-soft)' }} />
+          ))}
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+  );
+}
+
 function Quick() {
   const addTxn = (tab) => window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { tab } }));
   const goto = (page) => window.dispatchEvent(new CustomEvent('balance:goto', { detail: page }));
@@ -196,20 +306,67 @@ function computeDashboard() {
   const now = new Date();
   const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevYM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  let prevMonthIncome = 0, prevMonthExpense = 0;
+  const daySpend = {};
+  const acctBal = {};
+  for (const a of accts) acctBal[a.id] = Number(a.opening) || 0;
+
   let income = 0, expense = 0, monthIncome = 0, monthExpense = 0;
   const catSpend = {};
   for (const t of txns) {
-    if (t.type === 'income') { income += t.amount; if (ym(t.date) === curYM) monthIncome += t.amount; }
-    else if (t.type === 'expense') {
+    if (t.type === 'income') {
+      income += t.amount;
+      if (ym(t.date) === curYM) monthIncome += t.amount;
+      if (ym(t.date) === prevYM) prevMonthIncome += t.amount;
+      if (acctBal[t.account] !== undefined) acctBal[t.account] += t.amount;
+    } else if (t.type === 'expense') {
       expense += t.amount;
-      if (ym(t.date) === curYM) monthExpense += t.amount;
+      if (ym(t.date) === curYM) { monthExpense += t.amount; daySpend[t.date] = (daySpend[t.date] || 0) + t.amount; }
+      if (ym(t.date) === prevYM) prevMonthExpense += t.amount;
+      if (acctBal[t.account] !== undefined) acctBal[t.account] -= t.amount;
       const c = t.category || 'Uncategorized';
       catSpend[c] = (catSpend[c] || 0) + t.amount;
+    } else if (t.type === 'transfer') {
+      if (acctBal[t.fromAccount] !== undefined) acctBal[t.fromAccount] -= t.amount;
+      if (acctBal[t.toAccount] !== undefined) acctBal[t.toAccount] += t.amount;
     }
   }
   const openingSum = accts.reduce((s, a) => s + (Number(a.opening) || 0), 0);
   const balanceTotal = openingSum + income - expense; // transfers net to zero
   const savingsRate = monthIncome > 0 ? Math.round(((monthIncome - monthExpense) / monthIncome) * 100) : 0;
+
+  const cashflowNet = monthIncome - monthExpense;
+  const prevCashflow = prevMonthIncome - prevMonthExpense;
+  const cashflowDelta = prevCashflow !== 0 ? Math.round(((cashflowNet - prevCashflow) / Math.abs(prevCashflow)) * 100) : undefined;
+
+  const incomeVsExpense = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    let exp = 0, inc = 0;
+    for (const t of txns) {
+      if (ym(t.date) !== key) continue;
+      if (t.type === 'expense') exp += t.amount; else if (t.type === 'income') inc += t.amount;
+    }
+    incomeVsExpense.push({ label: MON[d.getMonth()], inc: Math.round(inc), exp: Math.round(exp) });
+  }
+
+  const accountBalances = accts.map((a) => {
+    const bal = acctBal[a.id] || 0;
+    return { av: a.name.charAt(0).toUpperCase(), name: a.name, type: a.type, color: a.color || '#138a72', bal: inr(bal), neg: bal < 0 };
+  });
+
+  const allGoals = (savings.goals || []).map((g) => {
+    const pct = g.target > 0 ? Math.min(100, Math.round((g.saved / g.target) * 100)) : 0;
+    return { emoji: g.emoji, title: g.title, pct };
+  });
+
+  const heatmap = {
+    month: now.getMonth() + 1, year: now.getFullYear(),
+    days: Object.entries(daySpend).map(([date, spend]) => ({ date, spend: Math.round(spend) })),
+  };
 
   const categorySegs = Object.entries(catSpend).sort((a, b) => b[1] - a[1]).slice(0, 6)
     .map(([label, v]) => ({ label, v: Math.round(v) }));
@@ -257,7 +414,7 @@ function computeDashboard() {
     return { label: b.name, spent: inr(spent), cap: inr(b.amount), pct };
   });
 
-  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0 };
+  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0, cashflowNet, cashflowDelta, incomeVsExpense, accountBalances, allGoals, heatmap };
 }
 
 const CATALOG = {
@@ -272,6 +429,11 @@ const CATALOG = {
   category:     { title: 'Spending by Category', icon: 'pie', w: 2, h: 2, desc: 'Where your money goes', render: (d) => d.categorySegs.length ? <Donut segs={d.categorySegs} /> : <Empty msg="No spending yet." /> },
   trend:        { title: 'Monthly Trend', icon: 'bars', w: 2, h: 2, desc: 'Expenses over 8 months', render: (d) => <BarChart hot={7} data={d.trend} /> },
   transactions: { title: 'Recent Transactions', icon: 'list', w: 2, h: 2, desc: 'Latest activity', render: (d) => d.recent.length ? <WList rows={d.recent} /> : <Empty msg="No transactions yet." /> },
+  cashflow:     { title: 'Net Cash Flow', icon: 'trend', w: 1, h: 1, desc: 'Monthly surplus or deficit', render: (d) => <Stat value={inr(d.cashflowNet)} delta={d.cashflowDelta} good={d.cashflowNet >= 0} sub={d.cashflowNet >= 0 ? 'surplus this month' : 'deficit this month'} /> },
+  incVsExp:     { title: 'Income vs Expenses', icon: 'bars', w: 2, h: 1, desc: '6-month side-by-side view', render: (d) => <GroupedBars data={d.incomeVsExpense} /> },
+  accountList:  { title: 'Account Balances', icon: 'wallet', w: 2, h: 1, desc: 'Live balance per account', render: (d) => <AccountList rows={d.accountBalances} /> },
+  allGoals:     { title: 'All Savings Goals', icon: 'target', w: 2, h: 1, desc: 'Progress across every goal', render: (d) => <AllGoals goals={d.allGoals} /> },
+  heatmap:      { title: 'Spending Calendar', icon: 'calendar', w: 2, h: 2, desc: 'Day-by-day spending this month', render: (d) => <HeatmapCalendar days={d.heatmap.days} month={d.heatmap.month} year={d.heatmap.year} /> },
 };
 
 const DEFAULTS = ['balance', 'expenses', 'investment', 'category', 'trend', 'transactions', 'bills', 'goal'];

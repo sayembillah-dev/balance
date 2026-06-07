@@ -1145,7 +1145,7 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .mf-hint { font-size: 12.5px; color: var(--ink-3); margin: 0; line-height: 1.4; }
 
 /* ── AI model modal ──────────────────────────────────────────────────────── */
-.ai-modal { max-width: 640px; width: 100%; }
+.ai-modal { max-width: 640px; width: 100%; min-height: min(560px, 80vh); }
 .ai-modal-body { display: flex; flex-direction: column; gap: 18px; padding: 24px 26px 18px; overflow-y: auto; flex: 1 1 0; }
 .ai-modal-body .sel { width: 100%; }
 .ai-modal-body .txn-field { width: 100%; box-sizing: border-box; }

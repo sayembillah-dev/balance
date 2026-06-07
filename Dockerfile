@@ -37,5 +37,11 @@ COPY --from=builder /app /app
 
 EXPOSE 4000
 
+# Container health: poll the readiness probe (DB reachable). Uses Node's global
+# fetch so we don't need curl in the slim image. start-period covers boot + the
+# migration step in CMD below.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 # Apply pending migrations, then start the server. Fails fast if migration fails.
 CMD ["sh", "-c", "node apps/server/dist/db/migrate.js && node apps/server/dist/index.js"]

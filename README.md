@@ -356,8 +356,18 @@ balance/
 - **Shared** — End-to-end type safety via shared TypeScript types + Zod schemas
 
 > In production a **single container** serves both the API and the built SPA on
-> one port — no separate web server to manage. Health probes live at `/healthz`
-> (liveness) and `/readyz` (readiness, checks the DB).
+> one port — no separate web server to manage.
+>
+> **Health checks** (no auth required):
+>
+> | Endpoint | Purpose | Status codes |
+> | --- | --- | --- |
+> | `GET /healthz`, `/health/live` | Liveness — process is up (no dependencies) | `200` |
+> | `GET /readyz`, `/health/ready` | Readiness — database reachable (gates traffic) | `200` / `503` |
+> | `GET /health` | Full report — DB, storage & memory with per-check latency, plus version/uptime/runtime | `200` (healthy/degraded) / `503` (critical failure) |
+>
+> The full report's overall `status` is `pass`, `warn` (degraded but usable —
+> e.g. slow DB or non-writable storage), or `fail` (a critical check is down).
 
 ---
 

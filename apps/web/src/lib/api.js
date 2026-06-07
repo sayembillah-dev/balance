@@ -18,7 +18,7 @@ export function getAccessToken() {
 
 export class ApiError extends Error {
   constructor(status, error) {
-    super(error?.message || 'Request failed');
+    super(typeof error === 'string' ? error : (error?.message || 'Request failed'));
     this.status = status;
     this.code = error?.code;
     this.details = error?.details;

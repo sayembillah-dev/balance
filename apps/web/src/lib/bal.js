@@ -393,9 +393,10 @@ let aiSettingsObj = null;
 function loadAiSettings() { return aiSettingsObj; }
 function setAiSettingsCache(data) { aiSettingsObj = data; }
 function saveAiSettings(d) {
-  // Optimistically update cache
-  aiSettingsObj = aiSettingsObj ? { ...aiSettingsObj, ...d } : d;
-  return apiPatch('/me/ai-settings', d).catch((e) => console.error('[bal] ai-settings save failed', e));
+  // Optimistically update cache (only enabled + activeModelId)
+  const patch = { enabled: d.enabled, activeModelId: d.activeModelId ?? null };
+  aiSettingsObj = aiSettingsObj ? { ...aiSettingsObj, ...patch } : patch;
+  return apiPatch('/me/ai-settings', patch).catch((e) => console.error('[bal] ai-settings save failed', e));
 }
 
 // ── hydration / reset ────────────────────────────────────────────────────────

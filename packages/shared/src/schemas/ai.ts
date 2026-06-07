@@ -10,10 +10,8 @@ const credMap = z.record(z.string().max(64), z.string().max(20000));
 // ── PATCH /me/ai-settings ────────────────────────────────────────────────────
 export const aiSettingsUpdateSchema = z.object({
   enabled: z.boolean().optional(),
-  // null clears the provider selection
-  provider: enumOf(AI_PROVIDERS).nullable().optional(),
-  // If omitted or empty record → keep existing encrypted blob unchanged
-  credentials: credMap.optional(),
+  // UUID of the active ai_models row (null = deselect)
+  activeModelId: z.string().uuid().nullable().optional(),
 });
 
 // ── POST /me/ai-settings/test ────────────────────────────────────────────────
@@ -26,5 +24,19 @@ export const aiSettingsTestSchema = z.object({
 export const aiModelsRequestSchema = z.object({
   provider: enumOf(AI_PROVIDERS),
   // If omitted → server merges with stored credentials
+  credentials: credMap.optional(),
+});
+
+// ── POST /me/ai-models ───────────────────────────────────────────────────────
+export const aiModelCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  provider: enumOf(AI_PROVIDERS),
+  credentials: credMap,
+});
+
+// ── PATCH /me/ai-models/:id ──────────────────────────────────────────────────
+export const aiModelUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  provider: enumOf(AI_PROVIDERS).optional(),
   credentials: credMap.optional(),
 });

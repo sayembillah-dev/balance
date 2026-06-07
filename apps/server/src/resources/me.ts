@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import {
   profileUpdateSchema, settingsUpdateSchema, dashboardSchema, changePasswordSchema,
   aiSettingsUpdateSchema, aiSettingsTestSchema, aiModelsRequestSchema,
+  aiModelCreateSchema, aiModelUpdateSchema,
   type AiProviderType,
 } from '@balance/shared';
 import { db } from '../db/client.js';
-import { users, settings, dashboardLayouts, refreshTokens, aiSettings } from '../db/schema/index.js';
+import { users, settings, dashboardLayouts, refreshTokens, aiSettings, aiModels } from '../db/schema/index.js';
 import { authedUserId } from '../auth/middleware.js';
 import { hashPassword, verifyPassword } from '../auth/passwords.js';
 import { notFound, unauthorized, forbidden } from '../lib/errors.js';
@@ -139,47 +140,31 @@ function maskCredentials(raw: Record<string, string>): Record<string, string> {
 meRouter.get('/ai-settings', async (req, res) => {
   const userId = authedUserId(req);
   const row = await db.query.aiSettings.findFirst({ where: eq(aiSettings.userId, userId) });
-  if (!row) return res.json({ enabled: false, provider: null, credentials: {} });
-
-  let credentials: Record<string, string> = {};
-  if (row.encryptedCredentials) {
-    try {
-      credentials = maskCredentials(JSON.parse(row.encryptedCredentials));
-    } catch {
-      // Malformed JSON — return empty
-    }
-  }
-  res.json({ enabled: row.enabled, provider: row.provider, credentials });
+  if (!row) return res.json({ enabled: false, activeModelId: null });
+  res.json({ enabled: row.enabled, activeModelId: row.activeModelId ?? null });
 });
 
 meRouter.patch('/ai-settings', async (req, res) => {
   const userId = authedUserId(req);
   const input = aiSettingsUpdateSchema.parse(req.body);
 
-  const hasNewCredentials =
-    input.credentials && Object.keys(input.credentials).length > 0;
-  const credsCols = hasNewCredentials
-    ? { encryptedCredentials: JSON.stringify(input.credentials) }
-    : {};
-
-  const providerSet = input.provider !== undefined ? { provider: input.provider } : {};
   const enabledSet = input.enabled !== undefined ? { enabled: input.enabled } : {};
+  const activeModelSet = input.activeModelId !== undefined ? { activeModelId: input.activeModelId } : {};
 
   const [row] = await db
     .insert(aiSettings)
     .values({
       userId,
       enabled: input.enabled ?? false,
-      provider: input.provider ?? null,
-      ...credsCols,
+      activeModelId: input.activeModelId ?? null,
     })
     .onConflictDoUpdate({
       target: aiSettings.userId,
-      set: { ...enabledSet, ...providerSet, ...credsCols, updatedAt: new Date() },
+      set: { ...enabledSet, ...activeModelSet, updatedAt: new Date() },
     })
     .returning();
 
-  res.json({ enabled: row?.enabled ?? false, provider: row?.provider ?? null });
+  res.json({ enabled: row?.enabled ?? false, activeModelId: row?.activeModelId ?? null });
 });
 
 // Test credentials without saving (does not touch the database)
@@ -189,25 +174,82 @@ meRouter.post('/ai-settings/test', async (req, res) => {
   res.json(result);
 });
 
-// Fetch available models for a provider, merging with stored credentials for missing keys
+// Fetch available models for a provider using provided credentials (used from the add/edit modal)
 meRouter.post('/ai-settings/models', async (req, res) => {
-  const userId = authedUserId(req);
   const { provider, credentials: provided } = aiModelsRequestSchema.parse(req.body);
-
-  // Load stored credentials to fill in any fields the client didn't re-send
-  let stored: Record<string, string> = {};
-  const row = await db.query.aiSettings.findFirst({ where: eq(aiSettings.userId, userId) });
-  if (row?.encryptedCredentials) {
-    try { stored = JSON.parse(row.encryptedCredentials); } catch { /* ignore */ }
-  }
-
-  // Provided values override stored values
-  const merged = { ...stored, ...(provided ?? {}) };
-
+  const merged = provided ?? {};
   try {
     const models = await fetchModels(provider as AiProviderType, merged);
     res.json({ models });
   } catch (err) {
     res.json({ models: [], error: err instanceof Error ? err.message : String(err) });
   }
+});
+
+// ── AI models CRUD ────────────────────────────────────────────────────────────
+
+meRouter.get('/ai-models', async (req, res) => {
+  const userId = authedUserId(req);
+  const rows = await db.query.aiModels.findMany({
+    where: eq(aiModels.userId, userId),
+    orderBy: [aiModels.createdAt],
+  });
+  res.json({
+    models: rows.map((m) => ({
+      id: m.id,
+      name: m.name,
+      provider: m.provider,
+      credentials: maskCredentials(JSON.parse(m.encryptedCredentials)),
+    })),
+  });
+});
+
+meRouter.post('/ai-models', async (req, res) => {
+  const userId = authedUserId(req);
+  const input = aiModelCreateSchema.parse(req.body);
+  const [model] = await db
+    .insert(aiModels)
+    .values({
+      userId,
+      name: input.name,
+      provider: input.provider,
+      encryptedCredentials: JSON.stringify(input.credentials),
+    })
+    .returning();
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  res.status(201).json({ id: model!.id, name: model!.name, provider: model!.provider });
+});
+
+meRouter.patch('/ai-models/:id', async (req, res) => {
+  const userId = authedUserId(req);
+  const { id } = req.params;
+  const input = aiModelUpdateSchema.parse(req.body);
+
+  const existing = await db.query.aiModels.findFirst({
+    where: and(eq(aiModels.id, id), eq(aiModels.userId, userId)),
+  });
+  if (!existing) throw notFound('Model not found');
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.provider !== undefined) updates.provider = input.provider;
+  if (input.credentials && Object.keys(input.credentials).length > 0) {
+    const merged = { ...JSON.parse(existing.encryptedCredentials), ...input.credentials };
+    updates.encryptedCredentials = JSON.stringify(merged);
+  }
+
+  await db.update(aiModels).set(updates).where(and(eq(aiModels.id, id), eq(aiModels.userId, userId)));
+  res.json({ ok: true });
+});
+
+meRouter.delete('/ai-models/:id', async (req, res) => {
+  const userId = authedUserId(req);
+  const { id } = req.params;
+  await db.delete(aiModels).where(and(eq(aiModels.id, id), eq(aiModels.userId, userId)));
+  // Clear active_model_id if it pointed to the deleted model
+  await db
+    .update(aiSettings)
+    .set({ activeModelId: null, updatedAt: new Date() })
+    .where(and(eq(aiSettings.userId, userId), eq(aiSettings.activeModelId, id)));
+  res.json({ ok: true });
 });

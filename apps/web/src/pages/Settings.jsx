@@ -2,10 +2,10 @@
    Internal tabs; Preferences & Logic is the showcase.
    Draft/Save/Cancel persisted via the API (profile → /me, prefs → /me/settings). */
 import React, { useState, useRef, useEffect } from 'react';
-import { apiUpload, apiObjectUrl, apiPost, apiDelete, apiGet } from '../lib/api.js';
+import { apiUpload, apiObjectUrl, apiPost, apiPatch, apiDelete, apiGet } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
-import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug, Brain } from '@phosphor-icons/react';
+import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug, Brain, Eye, EyeSlash } from '@phosphor-icons/react';
 
 // Full IANA timezone list (every zone the runtime knows), each labelled with its
 // current UTC offset. Falls back to a short list on older engines.
@@ -37,8 +37,8 @@ const DEFAULTS = {
   currency: 'INR', monthStart: '1', rollover: true, tagBehavior: 'parallel', privacy: false,
   twoFactor: true, loginAlerts: true, biometric: false,
   sync: true, googleDrive: false, weeklyEmail: true,
-  // AI provider settings
-  aiEnabled: false, aiProvider: null, aiCredentials: {},
+  // AI settings
+  aiEnabled: false, aiActiveModelId: null,
 };
 const load = () => ({ ...DEFAULTS, ...window.BAL.loadSettings() });
 
@@ -60,7 +60,7 @@ const TABS = [
 const Switch = ({ on, onClick }) => <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={!!on} onClick={onClick}><i /></button>;
 const Row = ({ title, sub, children, block, danger }) => (
   <div className={`set-row${block ? ' block' : ''}${danger ? ' danger' : ''}`}>
-    <div className="rl"><b>{title}</b>{sub && <span>{sub}</span>}</div>
+    <div className="rl"><b>{title}</b>{sub && <span className="rl-sub">{sub}</span>}</div>
     {block ? children : <div className="rc">{children}</div>}
   </div>
 );
@@ -257,81 +257,278 @@ function modelFieldKey(providerKey) {
   return fields.find((f) => f.type === 'model')?.key || null;
 }
 
-function AiPanel({ d, set, onAiLoad, aiLoaded }) {
-  // Masked credentials loaded from server (shown as placeholders, not values)
-  const [loadedCreds, setLoadedCreds] = useState({});
-  // Model list state (local — not saved to DB)
-  const [aiModels, setAiModels] = useState(null);
-  const [aiModelsLoading, setAiModelsLoading] = useState(false);
-  const [aiModelsError, setAiModelsError] = useState(null);
-  // Connection test state
+// ── AI Model Add/Edit Modal ───────────────────────────────────────────────────
+
+function AiModelModal({ model, onClose, onSave }) {
+  const isNew = !model;
+  const [form, setForm] = useState({
+    name: model?.name ?? '',
+    provider: model?.provider ?? '',
+    credentials: {},
+  });
+  const [loadedCreds] = useState(model?.credentials ?? {});
+  const [fetchedModels, setFetchedModels] = useState(null);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [manualModel, setManualModel] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
-  // Manual model entry toggle (when model list is loaded but user wants to type)
-  const [manualModel, setManualModel] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  // Reset model list and test result when provider changes
-  const prevProvider = useRef(d.aiProvider);
+  const prevProvider = useRef(form.provider);
   useEffect(() => {
-    if (prevProvider.current !== d.aiProvider) {
-      setAiModels(null); setAiModelsError(null); setTestResult(null); setManualModel(false);
-      prevProvider.current = d.aiProvider;
+    if (prevProvider.current !== form.provider) {
+      setFetchedModels(null); setFetchError(null); setManualModel(false); setTestResult(null);
+      prevProvider.current = form.provider;
     }
-  }, [d.aiProvider]);
-
-  // Lazy-load AI settings from server on first mount
-  useEffect(() => {
-    if (aiLoaded) return;
-    apiGet('/me/ai-settings').then((data) => {
-      setLoadedCreds(data.credentials || {});
-      onAiLoad({ enabled: data.enabled ?? false, provider: data.provider ?? null });
-    }).catch(() => {});
-  }, []);
+  }, [form.provider]);
 
   const setCredential = (key, val) => {
-    set('aiCredentials', { ...d.aiCredentials, [key]: val });
-    setTestResult(null); // any change clears test result
-    if (key !== modelFieldKey(d.aiProvider)) {
-      // credential change (not model) should invalidate fetched model list
-      setAiModels(null); setAiModelsError(null); setManualModel(false);
+    setForm((p) => ({ ...p, credentials: { ...p.credentials, [key]: val } }));
+    setTestResult(null);
+    if (key !== modelFieldKey(form.provider)) {
+      setFetchedModels(null); setFetchError(null); setManualModel(false);
     }
   };
 
-  const fetchModels = async () => {
-    if (!d.aiProvider) return;
-    setAiModelsLoading(true); setAiModelsError(null);
+  const doFetchModels = async () => {
+    if (!form.provider) return;
+    setFetchLoading(true); setFetchError(null);
     try {
-      const data = await apiPost('/me/ai-settings/models', {
-        provider: d.aiProvider,
-        credentials: d.aiCredentials,
-      });
-      if (data.error) { setAiModelsError(data.error); setAiModels(null); }
-      else { setAiModels(data.models || []); }
-    } catch (e) {
-      setAiModelsError(e?.message || 'Failed to fetch models');
-    } finally {
-      setAiModelsLoading(false);
-    }
+      const data = await apiPost('/me/ai-settings/models', { provider: form.provider, credentials: form.credentials });
+      if (data.error) { setFetchError(data.error); setFetchedModels(null); }
+      else { setFetchedModels(data.models || []); }
+    } catch (e) { setFetchError(e?.message || 'Failed to fetch models'); }
+    finally { setFetchLoading(false); }
   };
 
-  const testConnection = async () => {
-    if (!d.aiProvider) return;
+  const doTest = async () => {
+    if (!form.provider) return;
     setTestLoading(true); setTestResult(null);
     try {
-      const result = await apiPost('/me/ai-settings/test', {
-        provider: d.aiProvider,
-        credentials: d.aiCredentials,
-      });
+      const result = await apiPost('/me/ai-settings/test', { provider: form.provider, credentials: form.credentials });
       setTestResult(result);
-    } catch (e) {
-      setTestResult({ ok: false, message: e?.message || 'Connection test failed' });
-    } finally {
-      setTestLoading(false);
-    }
+    } catch (e) { setTestResult({ ok: false, message: e?.message || 'Connection test failed' }); }
+    finally { setTestLoading(false); }
   };
 
-  const config = d.aiProvider ? PROVIDER_CONFIG[d.aiProvider] : null;
-  const mKey = d.aiProvider ? modelFieldKey(d.aiProvider) : null;
+  const handleSave = async () => {
+    if (!form.name.trim()) { setSaveError('Please enter a model name.'); return; }
+    if (!form.provider) { setSaveError('Please select a provider.'); return; }
+    setSaving(true); setSaveError('');
+    try {
+      if (isNew) {
+        const saved = await apiPost('/me/ai-models', {
+          name: form.name.trim(), provider: form.provider, credentials: form.credentials,
+        });
+        onSave({ id: saved.id, name: saved.name, provider: saved.provider, credentials: {} }, true);
+      } else {
+        await apiPatch(`/me/ai-models/${model.id}`, {
+          name: form.name.trim(), provider: form.provider, credentials: form.credentials,
+        });
+        onSave({ id: model.id, name: form.name.trim(), provider: form.provider, credentials: loadedCreds }, false);
+      }
+    } catch (e) { setSaveError(e?.message || 'Failed to save model.'); setSaving(false); }
+  };
+
+  const config = form.provider ? PROVIDER_CONFIG[form.provider] : null;
+
+  const renderField = (field) => {
+    if (field.dependsOn) {
+      const dep = field.dependsOn;
+      const val = form.credentials[dep.key] ?? loadedCreds[dep.key] ?? '';
+      if (val !== dep.value) return null;
+    }
+    const val = form.credentials[field.key] ?? '';
+    const ph = loadedCreds[field.key] || field.placeholder || '';
+
+    if (field.type === 'radio') {
+      const current = val || loadedCreds[field.key] || (field.options?.[0]?.value ?? '');
+      return (
+        <div key={field.key} className="mf">
+          <label className="mf-label">{field.label}{field.required && <span className="req">*</span>}</label>
+          <div className="radio-cards">
+            {field.options.map((opt) => (
+              <div key={opt.value} className={`radio-card${current === opt.value ? ' on' : ''}`} onClick={() => setCredential(field.key, opt.value)}>
+                <span className="radio-dot" /><div className="rc-txt"><b>{opt.label}</b></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (field.type === 'textarea') {
+      return (
+        <div key={field.key} className="mf">
+          <label className="mf-label">{field.label}{field.required && <span className="req">*</span>}</label>
+          {field.hint && <p className="mf-hint">{field.hint}</p>}
+          <textarea
+            className="txn-field"
+            style={{ width: '100%', minHeight: 110, fontFamily: 'monospace', fontSize: 12, resize: 'vertical', height: 'auto', padding: '10px 12px' }}
+            value={val} placeholder={ph}
+            onChange={(e) => setCredential(field.key, e.target.value)}
+          />
+        </div>
+      );
+    }
+
+    if (field.type === 'model') {
+      const hasModels = fetchedModels && fetchedModels.length > 0;
+      const showDropdown = hasModels && !manualModel;
+      return (
+        <div key={field.key} className="mf">
+          <label className="mf-label">{field.label}{field.required && <span className="req">*</span>}</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {showDropdown ? (
+              <Select
+                value={val || loadedCreds[field.key] || ''}
+                onChange={(v) => setCredential(field.key, v)}
+                options={fetchedModels.map((m) => ({ value: m.id, label: m.name }))}
+                ariaLabel="Model"
+              />
+            ) : (
+              <input
+                className="txn-field"
+                style={{ flex: 1, height: 42, color: 'var(--ink)' }}
+                type="text" value={val} placeholder={ph}
+                onChange={(e) => setCredential(field.key, e.target.value)}
+              />
+            )}
+            <button className="btn-ghost" style={{ whiteSpace: 'nowrap', height: 42 }} onClick={doFetchModels} disabled={fetchLoading}>
+              {fetchLoading ? 'Loading…' : hasModels ? 'Refresh' : 'Fetch models ↓'}
+            </button>
+          </div>
+          {hasModels && (
+            <button style={{ background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'var(--ink-3)', cursor: 'pointer' }} onClick={() => setManualModel(!manualModel)}>
+              {manualModel ? '← Back to list' : 'Enter ID manually'}
+            </button>
+          )}
+          {fetchError && <p style={{ color: '#c02626', margin: '4px 0 0', fontSize: 13 }}>{fetchError}</p>}
+        </div>
+      );
+    }
+
+    const isPassword = field.type === 'password';
+    return (
+      <div key={field.key} className="mf">
+        <label className="mf-label">{field.label}{field.required && <span className="req">*</span>}</label>
+        {field.hint && <p className="mf-hint">{field.hint}</p>}
+        <div className={isPassword ? 'pass-wrap' : undefined}>
+          <input
+            className="txn-field"
+            style={{ width: '100%', height: 42, color: 'var(--ink)' }}
+            type={isPassword && !showPasswords[field.key] ? 'password' : 'text'}
+            value={val} placeholder={ph}
+            autoComplete={isPassword ? 'new-password' : 'off'}
+            onChange={(e) => setCredential(field.key, e.target.value)}
+          />
+          {isPassword && (
+            <button className="pass-eye" type="button" tabIndex={-1} onClick={() => setShowPasswords((p) => ({ ...p, [field.key]: !p[field.key] }))}>
+              {showPasswords[field.key] ? <EyeSlash size={16} /> : <Eye size={16} />}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="lib-overlay" onMouseDown={onClose}>
+      <div className="lib ai-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="lib-head">
+          <div><h3>{isNew ? 'Add AI Model' : 'Edit AI Model'}</h3><p>Configure a provider connection to use in the app.</p></div>
+          <button className="lib-x" onClick={onClose}>×</button>
+        </div>
+        <div className="ai-modal-body">
+          <div className="mf">
+            <label className="mf-label">Display name <span className="req">*</span></label>
+            <input
+              className="txn-field"
+              style={{ width: '100%', height: 42, color: 'var(--ink)' }}
+              type="text" value={form.name} placeholder="e.g. My GPT-4, Work Claude…"
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              autoFocus
+            />
+          </div>
+
+          <div className="mf">
+            <label className="mf-label">Provider <span className="req">*</span></label>
+            <Select
+              value={form.provider}
+              onChange={(v) => {
+                setForm((p) => ({ ...p, provider: v || '', credentials: {} }));
+                setFetchedModels(null); setFetchError(null); setManualModel(false); setTestResult(null);
+              }}
+              options={[{ value: '', label: 'Select a provider…' }, ...AI_PROVIDERS]}
+              ariaLabel="AI Provider"
+            />
+          </div>
+
+          {config && (
+            <>
+              <div className="ai-modal-divider"><span>Credentials</span></div>
+              {config.fields.map(renderField)}
+              <div className="ai-modal-test">
+                <button className="btn-ghost" onClick={doTest} disabled={testLoading}>
+                  {testLoading ? 'Testing…' : 'Test connection'}
+                </button>
+                {testResult && (
+                  <span style={{ fontSize: 14, color: testResult.ok ? '#16a34a' : '#c02626', fontWeight: 500 }}>
+                    {testResult.ok ? '✓ Connected' : `✗ ${testResult.message}`}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          {saveError && <p style={{ color: '#c02626', margin: '4px 0', fontSize: 14 }}>{saveError}</p>}
+
+          <div className="ai-modal-foot">
+            <button className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : isNew ? 'Add model' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AI Panel (settings tab) ───────────────────────────────────────────────────
+
+function AiPanel({ d, set, onAiLoad, aiLoaded }) {
+  const [savedModels, setSavedModels] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingModel, setEditingModel] = useState(null);
+
+  useEffect(() => {
+    if (!aiLoaded) {
+      apiGet('/me/ai-settings').then((data) => {
+        onAiLoad({ enabled: data.enabled ?? false, activeModelId: data.activeModelId ?? null });
+      }).catch(() => {});
+    }
+    apiGet('/me/ai-models').then((data) => setSavedModels(data.models || [])).catch(() => {});
+  }, []);
+
+  const deleteModel = async (id) => {
+    if (!window.confirm('Delete this AI model? This cannot be undone.')) return;
+    await apiDelete(`/me/ai-models/${id}`);
+    setSavedModels((prev) => prev.filter((m) => m.id !== id));
+    if (d.aiActiveModelId === id) set('aiActiveModelId', null);
+  };
+
+  const openAdd = () => { setEditingModel(null); setModalOpen(true); };
+  const openEdit = (model) => { setEditingModel(model); setModalOpen(true); };
+
+  const onModalSave = (model, isNew) => {
+    setSavedModels((prev) => isNew ? [...prev, model] : prev.map((m) => m.id === model.id ? model : m));
+    if (isNew && savedModels.length === 0) set('aiActiveModelId', model.id);
+    setModalOpen(false);
+  };
 
   return (
     <>
@@ -340,148 +537,51 @@ function AiPanel({ d, set, onAiLoad, aiLoaded }) {
         <Row title="Enable AI" sub="Allow this app to make AI-powered requests on your behalf.">
           <Switch on={d.aiEnabled} onClick={() => set('aiEnabled', !d.aiEnabled)} />
         </Row>
-
-        {d.aiEnabled && (
-          <Row title="Provider" sub="Choose which AI service to connect to.">
-            <Select
-              value={d.aiProvider || ''}
-              onChange={(v) => {
-                set('aiProvider', v || null);
-                set('aiCredentials', {});
-                setLoadedCreds({});
-              }}
-              options={[{ value: '', label: 'Select a provider…' }, ...AI_PROVIDERS]}
-              ariaLabel="AI Provider"
-            />
-          </Row>
-        )}
       </div>
 
-      {d.aiEnabled && config && (
+      {d.aiEnabled && (
         <>
-          <div className="set-group-t">Credentials</div>
-          <div className="set-group">
-            {config.fields.map((field) => {
-              // Conditional visibility (e.g. Hugging Face endpoint URL only when dedicated)
-              if (field.dependsOn) {
-                const dep = field.dependsOn;
-                const val = d.aiCredentials[dep.key] ?? loadedCreds[dep.key] ?? '';
-                if (val !== dep.value) return null;
-              }
-
-              const val = d.aiCredentials[field.key] ?? '';
-              const ph = loadedCreds[field.key] || field.placeholder || '';
-
-              if (field.type === 'radio') {
-                const current = val || loadedCreds[field.key] || (field.options?.[0]?.value ?? '');
-                return (
-                  <Row key={field.key} block title={field.label}>
-                    <div className="radio-cards" style={{ marginTop: 8 }}>
-                      {field.options.map((opt) => (
-                        <div key={opt.value} className={`radio-card${current === opt.value ? ' on' : ''}`} onClick={() => setCredential(field.key, opt.value)}>
-                          <span className="radio-dot" />
-                          <div className="rc-txt"><b>{opt.label}</b></div>
-                        </div>
-                      ))}
-                    </div>
-                  </Row>
-                );
-              }
-
-              if (field.type === 'textarea') {
-                return (
-                  <Row key={field.key} block title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>} sub={field.hint}>
-                    <textarea
-                      className="txn-field"
-                      style={{ width: '100%', minHeight: 120, fontFamily: 'monospace', fontSize: 12, resize: 'vertical', marginTop: 6 }}
-                      value={val}
-                      placeholder={ph}
-                      onChange={(e) => setCredential(field.key, e.target.value)}
-                    />
-                  </Row>
-                );
-              }
-
-              if (field.type === 'model') {
-                const hasModels = aiModels && aiModels.length > 0;
-                const showDropdown = hasModels && !manualModel;
-                return (
-                  <Row key={field.key} block title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
-                      {showDropdown ? (
-                        <Select
-                          value={val || loadedCreds[field.key] || ''}
-                          onChange={(v) => setCredential(field.key, v)}
-                          options={aiModels.map((m) => ({ value: m.id, label: m.name }))}
-                          ariaLabel="Model"
-                          className="txn-field"
-                        />
-                      ) : (
-                        <input
-                          className="txn-field"
-                          style={{ flex: 1, height: 42, color: 'var(--ink)' }}
-                          type="text"
-                          value={val}
-                          placeholder={ph}
-                          onChange={(e) => setCredential(field.key, e.target.value)}
-                        />
-                      )}
-                      <button
-                        className="btn-ghost"
-                        style={{ whiteSpace: 'nowrap', height: 42 }}
-                        onClick={fetchModels}
-                        disabled={aiModelsLoading}
-                      >
-                        {aiModelsLoading ? 'Loading…' : hasModels ? 'Refresh' : 'Fetch models ↓'}
-                      </button>
-                    </div>
-                    {hasModels && (
-                      <button
-                        style={{ background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'var(--ink-3)', cursor: 'pointer' }}
-                        onClick={() => setManualModel(!manualModel)}
-                      >
-                        {manualModel ? '← Back to list' : 'Enter ID manually'}
-                      </button>
-                    )}
-                    {aiModelsError && <p style={{ color: '#c02626', margin: '4px 0 0', fontSize: 13 }}>{aiModelsError}</p>}
-                  </Row>
-                );
-              }
-
-              // Default: text or password input
-              return (
-                <Row key={field.key} title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>} sub={field.hint}>
-                  <input
-                    className="txn-field"
-                    style={{ minWidth: 280, height: 42, color: 'var(--ink)' }}
-                    type={field.type === 'password' ? 'password' : 'text'}
-                    value={val}
-                    placeholder={ph}
-                    autoComplete={field.type === 'password' ? 'new-password' : 'off'}
-                    onChange={(e) => setCredential(field.key, e.target.value)}
-                  />
-                </Row>
-              );
-            })}
+          <div className="ai-models-header">
+            <span className="set-group-t" style={{ margin: 0 }}>Saved Models</span>
+            <button className="btn-ghost ai-add-btn" onClick={openAdd}>+ Add model</button>
           </div>
 
-          <div className="set-group-t">Connection</div>
-          <div className="set-group" style={{ gap: 0 }}>
-            <Row title="Test connection" sub="Verify that your credentials can reach the provider.">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {testResult && (
-                  <span style={{ fontSize: 14, color: testResult.ok ? '#16a34a' : '#c02626', fontWeight: 500 }}>
-                    {testResult.ok ? '✓ Connected' : `✗ ${testResult.message}`}
-                  </span>
-                )}
-                <button className="btn-ghost" onClick={testConnection} disabled={testLoading}>
-                  {testLoading ? 'Testing…' : 'Test connection'}
-                </button>
+          {savedModels.length === 0 ? (
+            <div className="set-group">
+              <div className="ai-empty">
+                <p>No AI models configured yet.</p>
+                <button className="btn-ghost" onClick={openAdd}>+ Add your first AI model</button>
               </div>
-            </Row>
-          </div>
+            </div>
+          ) : (
+            <div className="set-group" style={{ gap: 0 }}>
+              {savedModels.map((model) => (
+                <div
+                  key={model.id}
+                  className={`ai-model-card${d.aiActiveModelId === model.id ? ' active' : ''}`}
+                  onClick={() => set('aiActiveModelId', model.id)}
+                >
+                  <div className="ai-model-left">
+                    <div className={`ai-model-radio${d.aiActiveModelId === model.id ? ' on' : ''}`} />
+                    <div className="ai-model-info">
+                      <b>{model.name}</b>
+                      <span>{AI_PROVIDERS.find((p) => p.value === model.provider)?.label || model.provider}</span>
+                    </div>
+                  </div>
+                  <div className="ai-model-actions">
+                    <button className="btn-ghost" style={{ fontSize: 13, padding: '5px 14px', height: 34 }}
+                      onClick={(e) => { e.stopPropagation(); openEdit(model); }}>Edit</button>
+                    <button className="btn-ghost ai-del-btn" style={{ fontSize: 13, padding: '5px 14px', height: 34 }}
+                      onClick={(e) => { e.stopPropagation(); deleteModel(model.id); }}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
+
+      {modalOpen && <AiModelModal model={editingModel} onClose={() => setModalOpen(false)} onSave={onModalSave} />}
     </>
   );
 }
@@ -566,11 +666,7 @@ export default function Settings() {
   const dirty = JSON.stringify(d) !== JSON.stringify(saved);
   const save = () => {
     window.BAL.saveSettings(d);
-    window.BAL.saveAiSettings({
-      enabled: d.aiEnabled ?? false,
-      provider: d.aiProvider ?? null,
-      credentials: d.aiCredentials ?? {},
-    });
+    window.BAL.saveAiSettings({ enabled: d.aiEnabled ?? false, activeModelId: d.aiActiveModelId ?? null });
     setSaved(d);
     setJustSaved(true);
   };
@@ -578,9 +674,9 @@ export default function Settings() {
 
   // Called by AiPanel once the server's AI settings are loaded.
   // Merges into both d and saved so dirty stays false after load.
-  const onAiLoad = ({ enabled, provider }) => {
-    setD((p) => ({ ...p, aiEnabled: enabled, aiProvider: provider, aiCredentials: {} }));
-    setSaved((p) => ({ ...p, aiEnabled: enabled, aiProvider: provider, aiCredentials: {} }));
+  const onAiLoad = ({ enabled, activeModelId }) => {
+    setD((p) => ({ ...p, aiEnabled: enabled, aiActiveModelId: activeModelId }));
+    setSaved((p) => ({ ...p, aiEnabled: enabled, aiActiveModelId: activeModelId }));
     setAiLoaded(true);
   };
 

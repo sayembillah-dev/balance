@@ -27,17 +27,29 @@ export const settings = pgTable('settings', {
   ...timestamps,
 });
 
-/** Per-user AI provider configuration. Credentials are encrypted with
- *  AES-256-GCM before storage — never stored in plaintext. */
+/** Per-user AI provider configuration. */
 export const aiSettings = pgTable('ai_settings', {
   userId: uuid('user_id')
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   enabled: boolean('enabled').notNull().default(false),
-  // Which AI provider the user has configured (null = not yet selected)
+  // Legacy single-provider fields (kept for backward compat, superseded by ai_models)
   provider: text('provider'),
-  // AES-256-GCM encrypted JSON blob: iv:authTag:ciphertext (all hex)
   encryptedCredentials: text('encrypted_credentials'),
+  // UUID of the currently active ai_models row (soft FK — no constraint to avoid ordering issues)
+  activeModelId: uuid('active_model_id'),
+  ...timestamps,
+});
+
+/** Per-user saved AI model configurations (one row per saved model). */
+export const aiModels = pgTable('ai_models', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  provider: text('provider').notNull(),
+  encryptedCredentials: text('encrypted_credentials').notNull(),
   ...timestamps,
 });
 

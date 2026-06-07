@@ -634,12 +634,16 @@ html, body, #root {
 
 .txn-field {
   height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-  padding: 0 32px 0 12px; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink-2);
-  cursor: pointer; appearance: none; outline: none; transition: border-color 0.14s ease;
+  padding: 0 12px; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--ink-2);
+  appearance: none; outline: none; transition: border-color 0.14s ease;
+}
+.txn-field:focus { border-color: var(--primary); color: var(--ink); }
+/* Only native <select> elements get the dropdown arrow + pointer cursor */
+select.txn-field {
+  padding: 0 32px 0 12px; cursor: pointer;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%2390909a' d='M0 0h10L5 6z'/></svg>");
   background-repeat: no-repeat; background-position: right 11px center;
 }
-.txn-field:focus { border-color: var(--primary); color: var(--ink); }
 
 /* ── custom dropdown (components/Select.jsx) — replaces native <select> ───── */
 .sel { position: relative; display: inline-block; min-width: 150px; vertical-align: top; }
@@ -1118,13 +1122,57 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .set-row:first-child { border-top: none; }
 .set-row .rl { flex: 1; min-width: 0; }
 .set-row .rl b { font-size: 13.5px; font-weight: 600; color: var(--ink); display: block; }
-.set-row .rl span { font-size: 12.5px; color: var(--ink-3); font-weight: 500; display: block; margin-top: 3px; line-height: 1.45; max-width: 460px; }
+.set-row .rl .rl-sub { font-size: 12.5px; color: var(--ink-3); font-weight: 500; display: block; margin-top: 3px; line-height: 1.45; max-width: 460px; }
 .set-row .rc { flex: 0 0 auto; }
 .set-row .rc select.txn-field { min-width: 210px; height: 42px; }
 .set-row .rc .sel { min-width: 210px; }
 .set-row .rc .sel-btn { height: 42px; }
 .set-row.block { flex-direction: column; align-items: stretch; gap: 13px; }
 .set-row.danger b { color: #c02626; }
+
+/* ── required asterisk (inline, never block) ─────────────────────────────── */
+.req { color: #c02626; margin-left: 3px; font-weight: 700; display: inline !important; }
+
+/* ── password field with show/hide toggle ────────────────────────────────── */
+.pass-wrap { position: relative; }
+.pass-wrap .txn-field { padding-right: 38px; }
+.pass-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--ink-3); padding: 4px; display: flex; align-items: center; line-height: 1; }
+.pass-eye:hover { color: var(--ink); }
+
+/* ── modal field layout (used in AiModelModal) ───────────────────────────── */
+.mf { display: flex; flex-direction: column; gap: 6px; }
+.mf-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+.mf-hint { font-size: 12.5px; color: var(--ink-3); margin: 0; line-height: 1.4; }
+
+/* ── AI model modal ──────────────────────────────────────────────────────── */
+.ai-modal { max-width: 520px; width: 100%; }
+.ai-modal-body { display: flex; flex-direction: column; gap: 16px; padding: 18px 22px 22px; overflow-y: auto; flex: 1 1 0; }
+.ai-modal-body .sel { width: 100%; }
+.ai-modal-divider { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; }
+.ai-modal-divider span { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.ai-modal-divider::before, .ai-modal-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-soft); }
+.ai-modal-test { display: flex; align-items: center; gap: 12px; padding-top: 4px; }
+.ai-modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; border-top: 1px solid var(--border-soft); margin-top: 4px; }
+
+/* ── AI saved-model list ─────────────────────────────────────────────────── */
+.ai-models-header { display: flex; align-items: center; justify-content: space-between; margin: 6px 2px 0; }
+.ai-models-header .set-group-t { margin: 0; }
+.ai-add-btn { font-size: 12.5px; padding: 5px 14px; height: 32px; }
+.ai-model-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--border-soft); cursor: pointer; transition: background 0.12s; }
+.ai-model-card:first-child { border-top: none; }
+.ai-model-card:hover { background: var(--surface-2, rgba(0,0,0,0.02)); }
+.ai-model-card.active { background: var(--primary-soft); }
+.ai-model-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.ai-model-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; transition: border-color 0.14s; }
+.ai-model-radio.on { border-color: var(--primary); }
+.ai-model-radio.on::after { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); display: block; }
+.ai-model-info { min-width: 0; }
+.ai-model-info b { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-model-info span { display: block; font-size: 12.5px; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+.ai-model-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.ai-del-btn { color: #c02626 !important; }
+.ai-empty { padding: 28px 20px; text-align: center; }
+.ai-empty p { color: var(--ink-3); font-size: 14px; margin: 0 0 12px; }
 .switch { position: relative; width: 44px; height: 25px; border: none; border-radius: 999px; background: var(--border); cursor: pointer; padding: 0; flex: 0 0 auto; transition: background 0.16s; }
 .switch.on { background: var(--primary); }
 .switch i { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; transition: transform 0.16s; }

@@ -385,6 +385,19 @@ function saveWidgets(list) {
   apiPut('/me/dashboard', { widgetIds: list }).catch((e) => console.error('[bal] widgets save failed', e));
 }
 
+// ── AI provider settings ─────────────────────────────────────────────────────
+// Not hydrated up-front (lazy-loaded by the AI settings tab). The cache just
+// avoids a double-fetch if the user navigates away and back.
+let aiSettingsObj = null;
+
+function loadAiSettings() { return aiSettingsObj; }
+function setAiSettingsCache(data) { aiSettingsObj = data; }
+function saveAiSettings(d) {
+  // Optimistically update cache
+  aiSettingsObj = aiSettingsObj ? { ...aiSettingsObj, ...d } : d;
+  return apiPatch('/me/ai-settings', d).catch((e) => console.error('[bal] ai-settings save failed', e));
+}
+
 // ── hydration / reset ────────────────────────────────────────────────────────
 async function refillAccounts() { accounts = (await apiGet('/accounts')).map(adaptAccount); emitChanged(); }
 async function refillTags() { tags = (await apiGet('/tags')).map(adaptTag); emitChanged(); }
@@ -483,6 +496,7 @@ const BAL = {
   loadPayRecv, savePayRecv,
   loadSettings, saveSettings,
   loadWidgets, saveWidgets,
+  loadAiSettings, setAiSettingsCache, saveAiSettings,
 };
 
 if (typeof window !== 'undefined') window.BAL = BAL;

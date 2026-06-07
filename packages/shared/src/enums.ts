@@ -37,3 +37,22 @@ export type PayReceiveKind = (typeof PAY_RECEIVE_KINDS)[number];
 
 export const USER_ROLES = ['user', 'admin'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
+
+export const AI_PROVIDERS = [
+  'openai',
+  'azure',
+  'gemini-studio',
+  'gemini-vertex',
+  'anthropic',
+  'deepseek',
+  'xai',
+  'huggingface',
+  'openrouter',
+  'groq',
+  'mistral',
+  'cohere',
+  'together',
+  'ollama',
+  'local',
+] as const;
+export type AiProviderType = (typeof AI_PROVIDERS)[number];

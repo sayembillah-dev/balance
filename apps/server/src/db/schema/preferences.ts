@@ -27,6 +27,20 @@ export const settings = pgTable('settings', {
   ...timestamps,
 });
 
+/** Per-user AI provider configuration. Credentials are encrypted with
+ *  AES-256-GCM before storage — never stored in plaintext. */
+export const aiSettings = pgTable('ai_settings', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(false),
+  // Which AI provider the user has configured (null = not yet selected)
+  provider: text('provider'),
+  // AES-256-GCM encrypted JSON blob: iv:authTag:ciphertext (all hex)
+  encryptedCredentials: text('encrypted_credentials'),
+  ...timestamps,
+});
+
 /** Per-user ordered dashboard widget list. The ordered string array is the one
  *  place jsonb is the right model (no per-widget data, order matters). */
 export const dashboardLayouts = pgTable('dashboard_layouts', {

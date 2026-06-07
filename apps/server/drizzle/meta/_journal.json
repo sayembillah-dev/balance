@@ -36,6 +36,13 @@
       "when": 1780699198937,
       "tag": "0004_slow_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780810049190,
+      "tag": "0005_lowly_millenium_guard",
+      "breakpoints": true
     }
   ]
 }

@@ -2,10 +2,10 @@
    Internal tabs; Preferences & Logic is the showcase.
    Draft/Save/Cancel persisted via the API (profile → /me, prefs → /me/settings). */
 import React, { useState, useRef, useEffect } from 'react';
-import { apiUpload, apiObjectUrl, apiPost, apiDelete } from '../lib/api.js';
+import { apiUpload, apiObjectUrl, apiPost, apiDelete, apiGet } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import Select from '../components/Select.jsx';
-import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug } from '@phosphor-icons/react';
+import { Check, Key, ShieldCheck, DownloadSimple, User, SlidersHorizontal, Plug, Brain } from '@phosphor-icons/react';
 
 // Full IANA timezone list (every zone the runtime knows), each labelled with its
 // current UTC offset. Falls back to a short list on older engines.
@@ -28,7 +28,7 @@ const BROWSER_TZ = (() => {
 const G = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const GI = {
   check: Check, key: Key, shield: ShieldCheck, download: DownloadSimple,
-  user: User, sliders: SlidersHorizontal, plug: Plug,
+  user: User, sliders: SlidersHorizontal, plug: Plug, brain: Brain,
 };
 const STORE = 'balance.settings.v1';
 
@@ -37,6 +37,8 @@ const DEFAULTS = {
   currency: 'INR', monthStart: '1', rollover: true, tagBehavior: 'parallel', privacy: false,
   twoFactor: true, loginAlerts: true, biometric: false,
   sync: true, googleDrive: false, weeklyEmail: true,
+  // AI provider settings
+  aiEnabled: false, aiProvider: null, aiCredentials: {},
 };
 const load = () => ({ ...DEFAULTS, ...window.BAL.loadSettings() });
 
@@ -52,6 +54,7 @@ const TABS = [
   { id: 'prefs', icon: GI.sliders, label: 'Preferences & Logic' },
   { id: 'security', icon: GI.shield, label: 'Security & Privacy' },
   { id: 'data', icon: GI.plug, label: 'Data & Integrations' },
+  { id: 'ai', icon: GI.brain, label: 'AI Assistant' },
 ];
 
 const Switch = ({ on, onClick }) => <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={!!on} onClick={onClick}><i /></button>;
@@ -149,6 +152,340 @@ function SecurityPanel({ a }) {
   );
 }
 
+// ── AI Provider Config ────────────────────────────────────────────────────────
+const AI_PROVIDERS = [
+  { value: 'openai', label: 'OpenAI (ChatGPT)' },
+  { value: 'azure', label: 'Azure OpenAI' },
+  { value: 'gemini-studio', label: 'Google Gemini (AI Studio)' },
+  { value: 'gemini-vertex', label: 'Google Gemini (Vertex AI)' },
+  { value: 'anthropic', label: 'Anthropic (Claude)' },
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'xai', label: 'xAI (Grok)' },
+  { value: 'huggingface', label: 'Hugging Face' },
+  { value: 'openrouter', label: 'OpenRouter' },
+  { value: 'groq', label: 'Groq' },
+  { value: 'mistral', label: 'Mistral AI' },
+  { value: 'cohere', label: 'Cohere' },
+  { value: 'together', label: 'Together AI' },
+  { value: 'ollama', label: 'Ollama' },
+  { value: 'local', label: 'Local (LM Studio / vLLM)' },
+];
+
+const PROVIDER_CONFIG = {
+  openai: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'gpt-4o' },
+    { key: 'baseUrl', label: 'Base URL', type: 'text', required: false, placeholder: 'https://api.openai.com/v1', hint: 'Optional — override for enterprise proxies.' },
+    { key: 'orgId', label: 'Organization ID', type: 'text', required: false, placeholder: 'org-...' },
+  ]},
+  azure: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'endpoint', label: 'Endpoint', type: 'text', required: true, placeholder: 'https://{name}.openai.azure.com/' },
+    { key: 'deploymentName', label: 'Deployment Name', type: 'text', required: true, placeholder: 'my-gpt4-deployment' },
+    { key: 'apiVersion', label: 'API Version', type: 'text', required: true, placeholder: '2024-02-15-preview' },
+  ]},
+  'gemini-studio': { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'gemini-1.5-pro' },
+  ]},
+  'gemini-vertex': { fields: [
+    { key: 'serviceAccountJson', label: 'Service Account JSON', type: 'textarea', required: true, placeholder: 'Paste the contents of your service account JSON file…' },
+    { key: 'projectId', label: 'Project ID', type: 'text', required: true },
+    { key: 'region', label: 'Region', type: 'text', required: true, placeholder: 'us-central1' },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'gemini-1.5-pro' },
+  ]},
+  anthropic: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'claude-3-5-sonnet-20241022' },
+  ]},
+  deepseek: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'deepseek-chat' },
+    { key: 'baseUrl', label: 'Base URL', type: 'text', required: false, placeholder: 'https://api.deepseek.com' },
+  ]},
+  xai: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'grok-beta' },
+    { key: 'baseUrl', label: 'Base URL', type: 'text', required: false, placeholder: 'https://api.x.ai/v1' },
+  ]},
+  huggingface: { fields: [
+    { key: 'apiKey', label: 'Access Token', type: 'password', required: true },
+    { key: 'modelId', label: 'Model', type: 'model', required: true, placeholder: 'meta-llama/Meta-Llama-3-8B-Instruct' },
+    { key: 'endpointType', label: 'Endpoint Type', type: 'radio', required: true, options: [
+      { value: 'serverless', label: 'Serverless Inference API' },
+      { value: 'dedicated', label: 'Dedicated Endpoint' },
+    ]},
+    { key: 'endpointUrl', label: 'Endpoint URL', type: 'text', required: false, placeholder: 'https://your-endpoint.huggingface.cloud', dependsOn: { key: 'endpointType', value: 'dedicated' } },
+  ]},
+  openrouter: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelId', label: 'Model', type: 'model', required: true, placeholder: 'anthropic/claude-3-opus' },
+    { key: 'siteUrl', label: 'Site URL', type: 'text', required: false, placeholder: 'https://yourapp.com' },
+    { key: 'siteName', label: 'Site Name', type: 'text', required: false, placeholder: 'My App' },
+  ]},
+  groq: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'llama-3.1-70b-versatile' },
+  ]},
+  mistral: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'mistral-large-latest' },
+  ]},
+  cohere: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'command-r-plus' },
+  ]},
+  together: { fields: [
+    { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'mistralai/Mixtral-8x7B-Instruct-v0.1' },
+  ]},
+  ollama: { fields: [
+    { key: 'baseUrl', label: 'Base URL', type: 'text', required: false, placeholder: 'http://localhost:11434', hint: 'Leave blank to use http://localhost:11434' },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'llama3' },
+    { key: 'apiKey', label: 'API Key', type: 'password', required: false, hint: 'Optional — only needed for proxied Ollama setups.' },
+  ]},
+  local: { fields: [
+    { key: 'baseUrl', label: 'Base URL', type: 'text', required: true, placeholder: 'http://localhost:1234/v1', hint: 'e.g. http://localhost:1234/v1 for LM Studio' },
+    { key: 'modelName', label: 'Model', type: 'model', required: true, placeholder: 'llama3' },
+    { key: 'apiKey', label: 'API Key', type: 'password', required: false, hint: 'Optional — leave blank for local-only servers.' },
+  ]},
+};
+
+// Detect the model field key for a given provider config
+function modelFieldKey(providerKey) {
+  const fields = PROVIDER_CONFIG[providerKey]?.fields || [];
+  return fields.find((f) => f.type === 'model')?.key || null;
+}
+
+function AiPanel({ d, set, onAiLoad, aiLoaded }) {
+  // Masked credentials loaded from server (shown as placeholders, not values)
+  const [loadedCreds, setLoadedCreds] = useState({});
+  // Model list state (local — not saved to DB)
+  const [aiModels, setAiModels] = useState(null);
+  const [aiModelsLoading, setAiModelsLoading] = useState(false);
+  const [aiModelsError, setAiModelsError] = useState(null);
+  // Connection test state
+  const [testResult, setTestResult] = useState(null);
+  const [testLoading, setTestLoading] = useState(false);
+  // Manual model entry toggle (when model list is loaded but user wants to type)
+  const [manualModel, setManualModel] = useState(false);
+
+  // Reset model list and test result when provider changes
+  const prevProvider = useRef(d.aiProvider);
+  useEffect(() => {
+    if (prevProvider.current !== d.aiProvider) {
+      setAiModels(null); setAiModelsError(null); setTestResult(null); setManualModel(false);
+      prevProvider.current = d.aiProvider;
+    }
+  }, [d.aiProvider]);
+
+  // Lazy-load AI settings from server on first mount
+  useEffect(() => {
+    if (aiLoaded) return;
+    apiGet('/me/ai-settings').then((data) => {
+      setLoadedCreds(data.credentials || {});
+      onAiLoad({ enabled: data.enabled ?? false, provider: data.provider ?? null });
+    }).catch(() => {});
+  }, []);
+
+  const setCredential = (key, val) => {
+    set('aiCredentials', { ...d.aiCredentials, [key]: val });
+    setTestResult(null); // any change clears test result
+    if (key !== modelFieldKey(d.aiProvider)) {
+      // credential change (not model) should invalidate fetched model list
+      setAiModels(null); setAiModelsError(null); setManualModel(false);
+    }
+  };
+
+  const fetchModels = async () => {
+    if (!d.aiProvider) return;
+    setAiModelsLoading(true); setAiModelsError(null);
+    try {
+      const data = await apiPost('/me/ai-settings/models', {
+        provider: d.aiProvider,
+        credentials: d.aiCredentials,
+      });
+      if (data.error) { setAiModelsError(data.error); setAiModels(null); }
+      else { setAiModels(data.models || []); }
+    } catch (e) {
+      setAiModelsError(e?.message || 'Failed to fetch models');
+    } finally {
+      setAiModelsLoading(false);
+    }
+  };
+
+  const testConnection = async () => {
+    if (!d.aiProvider) return;
+    setTestLoading(true); setTestResult(null);
+    try {
+      const result = await apiPost('/me/ai-settings/test', {
+        provider: d.aiProvider,
+        credentials: d.aiCredentials,
+      });
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({ ok: false, message: e?.message || 'Connection test failed' });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  const config = d.aiProvider ? PROVIDER_CONFIG[d.aiProvider] : null;
+  const mKey = d.aiProvider ? modelFieldKey(d.aiProvider) : null;
+
+  return (
+    <>
+      <div className="set-group-t">AI Provider</div>
+      <div className="set-group">
+        <Row title="Enable AI" sub="Allow this app to make AI-powered requests on your behalf.">
+          <Switch on={d.aiEnabled} onClick={() => set('aiEnabled', !d.aiEnabled)} />
+        </Row>
+
+        {d.aiEnabled && (
+          <Row title="Provider" sub="Choose which AI service to connect to.">
+            <Select
+              value={d.aiProvider || ''}
+              onChange={(v) => {
+                set('aiProvider', v || null);
+                set('aiCredentials', {});
+                setLoadedCreds({});
+              }}
+              options={[{ value: '', label: 'Select a provider…' }, ...AI_PROVIDERS]}
+              ariaLabel="AI Provider"
+            />
+          </Row>
+        )}
+      </div>
+
+      {d.aiEnabled && config && (
+        <>
+          <div className="set-group-t">Credentials</div>
+          <div className="set-group">
+            {config.fields.map((field) => {
+              // Conditional visibility (e.g. Hugging Face endpoint URL only when dedicated)
+              if (field.dependsOn) {
+                const dep = field.dependsOn;
+                const val = d.aiCredentials[dep.key] ?? loadedCreds[dep.key] ?? '';
+                if (val !== dep.value) return null;
+              }
+
+              const val = d.aiCredentials[field.key] ?? '';
+              const ph = loadedCreds[field.key] || field.placeholder || '';
+
+              if (field.type === 'radio') {
+                const current = val || loadedCreds[field.key] || (field.options?.[0]?.value ?? '');
+                return (
+                  <Row key={field.key} block title={field.label}>
+                    <div className="radio-cards" style={{ marginTop: 8 }}>
+                      {field.options.map((opt) => (
+                        <div key={opt.value} className={`radio-card${current === opt.value ? ' on' : ''}`} onClick={() => setCredential(field.key, opt.value)}>
+                          <span className="radio-dot" />
+                          <div className="rc-txt"><b>{opt.label}</b></div>
+                        </div>
+                      ))}
+                    </div>
+                  </Row>
+                );
+              }
+
+              if (field.type === 'textarea') {
+                return (
+                  <Row key={field.key} block title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>} sub={field.hint}>
+                    <textarea
+                      className="txn-field"
+                      style={{ width: '100%', minHeight: 120, fontFamily: 'monospace', fontSize: 12, resize: 'vertical', marginTop: 6 }}
+                      value={val}
+                      placeholder={ph}
+                      onChange={(e) => setCredential(field.key, e.target.value)}
+                    />
+                  </Row>
+                );
+              }
+
+              if (field.type === 'model') {
+                const hasModels = aiModels && aiModels.length > 0;
+                const showDropdown = hasModels && !manualModel;
+                return (
+                  <Row key={field.key} block title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
+                      {showDropdown ? (
+                        <Select
+                          value={val || loadedCreds[field.key] || ''}
+                          onChange={(v) => setCredential(field.key, v)}
+                          options={aiModels.map((m) => ({ value: m.id, label: m.name }))}
+                          ariaLabel="Model"
+                          className="txn-field"
+                        />
+                      ) : (
+                        <input
+                          className="txn-field"
+                          style={{ flex: 1, height: 42, color: 'var(--ink)' }}
+                          type="text"
+                          value={val}
+                          placeholder={ph}
+                          onChange={(e) => setCredential(field.key, e.target.value)}
+                        />
+                      )}
+                      <button
+                        className="btn-ghost"
+                        style={{ whiteSpace: 'nowrap', height: 42 }}
+                        onClick={fetchModels}
+                        disabled={aiModelsLoading}
+                      >
+                        {aiModelsLoading ? 'Loading…' : hasModels ? 'Refresh' : 'Fetch models ↓'}
+                      </button>
+                    </div>
+                    {hasModels && (
+                      <button
+                        style={{ background: 'none', border: 'none', padding: '4px 0', fontSize: 13, color: 'var(--ink-3)', cursor: 'pointer' }}
+                        onClick={() => setManualModel(!manualModel)}
+                      >
+                        {manualModel ? '← Back to list' : 'Enter ID manually'}
+                      </button>
+                    )}
+                    {aiModelsError && <p style={{ color: '#c02626', margin: '4px 0 0', fontSize: 13 }}>{aiModelsError}</p>}
+                  </Row>
+                );
+              }
+
+              // Default: text or password input
+              return (
+                <Row key={field.key} title={<>{field.label}{field.required && <span style={{ color: '#c02626', marginLeft: 3 }}>*</span>}</>} sub={field.hint}>
+                  <input
+                    className="txn-field"
+                    style={{ minWidth: 280, height: 42, color: 'var(--ink)' }}
+                    type={field.type === 'password' ? 'password' : 'text'}
+                    value={val}
+                    placeholder={ph}
+                    autoComplete={field.type === 'password' ? 'new-password' : 'off'}
+                    onChange={(e) => setCredential(field.key, e.target.value)}
+                  />
+                </Row>
+              );
+            })}
+          </div>
+
+          <div className="set-group-t">Connection</div>
+          <div className="set-group" style={{ gap: 0 }}>
+            <Row title="Test connection" sub="Verify that your credentials can reach the provider.">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {testResult && (
+                  <span style={{ fontSize: 14, color: testResult.ok ? '#16a34a' : '#c02626', fontWeight: 500 }}>
+                    {testResult.ok ? '✓ Connected' : `✗ ${testResult.message}`}
+                  </span>
+                )}
+                <button className="btn-ghost" onClick={testConnection} disabled={testLoading}>
+                  {testLoading ? 'Testing…' : 'Test connection'}
+                </button>
+              </div>
+            </Row>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 function DataPanel({ a }) {
   return (
     <>
@@ -195,6 +532,7 @@ export default function Settings() {
   const [tab, setTab] = useState('prefs');
   const [justSaved, setJustSaved] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
+  const [aiLoaded, setAiLoaded] = useState(false);
 
   const actions = {
     changePassword: () => setPwOpen(true),
@@ -226,8 +564,25 @@ export default function Settings() {
 
   const set = (k, v) => { setD((p) => ({ ...p, [k]: v })); setJustSaved(false); };
   const dirty = JSON.stringify(d) !== JSON.stringify(saved);
-  const save = () => { window.BAL.saveSettings(d); setSaved(d); setJustSaved(true); };
+  const save = () => {
+    window.BAL.saveSettings(d);
+    window.BAL.saveAiSettings({
+      enabled: d.aiEnabled ?? false,
+      provider: d.aiProvider ?? null,
+      credentials: d.aiCredentials ?? {},
+    });
+    setSaved(d);
+    setJustSaved(true);
+  };
   const cancel = () => { setD(saved); setJustSaved(false); };
+
+  // Called by AiPanel once the server's AI settings are loaded.
+  // Merges into both d and saved so dirty stays false after load.
+  const onAiLoad = ({ enabled, provider }) => {
+    setD((p) => ({ ...p, aiEnabled: enabled, aiProvider: provider, aiCredentials: {} }));
+    setSaved((p) => ({ ...p, aiEnabled: enabled, aiProvider: provider, aiCredentials: {} }));
+    setAiLoaded(true);
+  };
 
   // Avatar: fetch the saved image (private → blob URL), and upload on change.
   const fileRef = useRef(null);
@@ -264,9 +619,11 @@ export default function Settings() {
         </div>
         <div className="set-panel">
           <div><div className="set-h2">{cur.label}</div><div className="set-h2-d">{
-            { profile: 'Your personal details and how we reach you.', prefs: 'Currency, budgeting logic and privacy controls.', security: 'Keep your account safe and private.', data: 'Connections, backups and exports.' }[tab]
+            { profile: 'Your personal details and how we reach you.', prefs: 'Currency, budgeting logic and privacy controls.', security: 'Keep your account safe and private.', data: 'Connections, backups and exports.', ai: 'Connect an AI provider to enable AI-powered features.' }[tab]
           }</div></div>
-          <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} />
+          {tab === 'ai'
+            ? <AiPanel d={d} set={set} onAiLoad={onAiLoad} aiLoaded={aiLoaded} />
+            : <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} />}
           <div className="set-foot">
             {justSaved && <span className="saved-note"><G d={GI.check} />All changes saved</span>}
             <button className="btn-ghost" onClick={cancel} disabled={!dirty} style={dirty ? null : { opacity: 0.5, cursor: 'default' }}>Cancel</button>

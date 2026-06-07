@@ -681,6 +681,13 @@ select.txn-field {
 .sel-opt.on { color: var(--primary-ink); font-weight: 600; }
 .sel-opt.on.active { background: var(--primary-soft); }
 .sel-opt.disabled { opacity: 0.5; cursor: default; }
+/* Searchable dropdown variant */
+.sel-menu.sel--has-search { overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+.sel-search { flex: 0 0 auto; padding: 5px; border-bottom: 1px solid var(--border-soft); background: var(--surface); }
+.sel-search-inp { display: block; width: 100%; height: 32px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); padding: 0 10px; font-family: inherit; font-size: 12.5px; color: var(--ink); outline: none; box-sizing: border-box; }
+.sel-search-inp:focus { border-color: var(--primary); }
+.sel-search-inp::placeholder { color: var(--ink-3); }
+.sel--has-search .sel-opts { flex: 1; overflow-y: auto; padding: 5px; }
 /* In a column form field the dropdown stretches to the field width (via the
    field's default align-items:stretch); allow it to shrink in narrow modals. */
 .field-row .sel, .field > .sel { min-width: 0; }

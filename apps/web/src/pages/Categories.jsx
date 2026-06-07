@@ -10,7 +10,14 @@ const CI = {
   edit: PencilSimple, trash: Trash, plus: Plus, eye: Eye, eyeoff: EyeSlash,
   check: Check, go: CaretRight, x: X, inc: ArrowDownLeft, exp: ArrowUpRight,
 };
-const COLORS = ['#e0892f', '#3aa3a3', '#7c4dd8', '#2f6fe0', '#d6457a', '#c0606a', '#16a34a', '#138a72', '#0e7490', '#64748b', '#b45309', '#9333ea'];
+const COLORS = [
+  '#2f6fe0', '#0284c7', '#0e7490', '#1d4ed8',
+  '#7c4dd8', '#9333ea', '#4f46e5', '#7e22ce',
+  '#138a72', '#0d9488', '#16a34a', '#15803d',
+  '#e0892f', '#b45309', '#d97706', '#ca8a04',
+  '#d6457a', '#c0606a', '#e11d48', '#dc2626',
+  '#64748b', '#475569',
+];
 
 function CatModal({ initial, type, onSave, onClose }) {
   const [f, setF] = useState(initial);

@@ -9,7 +9,8 @@
    Usage:
      <Select value={v} onChange={(val) => …}
              options={[{ value, label, disabled? }]}
-             placeholder="Choose…" className="…" ariaLabel="…" /> */
+             placeholder="Choose…" className="…" ariaLabel="…"
+             searchable /> */
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown } from '@phosphor-icons/react';
@@ -20,19 +21,23 @@ const MENU_MAX_H = 264;
 
 export default function Select({
   value, onChange, options = [], placeholder = 'Select…',
-  disabled = false, className = '', ariaLabel,
+  disabled = false, className = '', ariaLabel, searchable = false,
 }) {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1); // keyboard-highlighted index
-  const [coords, setCoords] = useState(null); // { top, left, width, drop }
+  const [active, setActive] = useState(-1);
+  const [coords, setCoords] = useState(null);
+  const [query, setQuery] = useState('');
   const rootRef = useRef(null);
   const menuRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const filtered = searchable && query.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
 
   const selected = options.find((o) => o.value === value);
   const label = selected ? selected.label : placeholder;
 
-  // Position the fixed menu against the trigger; flip above if it would spill
-  // off the bottom of the viewport.
   const place = () => {
     const el = rootRef.current;
     if (!el) return;
@@ -42,9 +47,8 @@ export default function Select({
     setCoords({ top: dropUp ? r.top : r.bottom, left: r.left, width: r.width, dropUp });
   };
 
-  // Reposition while open; close on outside click or Escape.
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) { setQuery(''); return undefined; }
     const onDoc = (e) => {
       if (rootRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return;
       setOpen(false);
@@ -63,12 +67,16 @@ export default function Select({
     };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // After the menu mounts, scroll the current selection into view.
   useLayoutEffect(() => {
     if (!open) return;
-    const el = menuRef.current?.children[active];
-    if (el) el.scrollIntoView({ block: 'nearest' });
+    if (searchable) { searchRef.current?.focus(); return; }
+    menuRef.current?.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [active, open]);
 
   const openMenu = () => {
     setActive(options.findIndex((o) => o.value === value));
@@ -82,15 +90,23 @@ export default function Select({
     setOpen(false);
   };
 
+  const navKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => Math.min(filtered.length - 1, i + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((i) => Math.max(0, i - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[active]) choose(filtered[active]); }
+    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+    else e.stopPropagation();
+  };
+
   const onKeyDown = (e) => {
     if (disabled) return;
     if (!open) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); openMenu(); }
       return;
     }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => Math.min(options.length - 1, i + 1)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => Math.min(filtered.length - 1, i + 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((i) => Math.max(0, i - 1)); }
-    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (options[active]) choose(options[active]); }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (filtered[active]) choose(filtered[active]); }
     else if (e.key === 'Tab') { setOpen(false); }
   };
 
@@ -115,18 +131,37 @@ export default function Select({
         <Caret />
       </button>
       {open && coords && createPortal(
-        <div className="sel-menu" role="listbox" ref={menuRef} style={menuStyle}>
-          {options.map((opt, i) => (
-            <div
-              key={opt.value}
-              role="option" aria-selected={opt.value === value}
-              className={`sel-opt${opt.value === value ? ' on' : ''}${i === active ? ' active' : ''}${opt.disabled ? ' disabled' : ''}`}
-              onMouseEnter={() => setActive(i)}
-              onMouseDown={(e) => { e.preventDefault(); choose(opt); }}
-            >
-              {opt.label}
+        <div className={`sel-menu${searchable ? ' sel--has-search' : ''}`} role="listbox" ref={menuRef} style={menuStyle}>
+          {searchable && (
+            <div className="sel-search" onMouseDown={(e) => e.stopPropagation()}>
+              <input
+                ref={searchRef}
+                type="text"
+                className="sel-search-inp"
+                placeholder="Search…"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setActive(0); }}
+                onKeyDown={navKey}
+              />
             </div>
-          ))}
+          )}
+          <div className={searchable ? 'sel-opts' : undefined}>
+            {filtered.length === 0 && (
+              <div className="sel-opt disabled" style={{ pointerEvents: 'none' }}>No results</div>
+            )}
+            {filtered.map((opt, i) => (
+              <div
+                key={opt.value}
+                data-idx={i}
+                role="option" aria-selected={opt.value === value}
+                className={`sel-opt${opt.value === value ? ' on' : ''}${i === active ? ' active' : ''}${opt.disabled ? ' disabled' : ''}`}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={(e) => { e.preventDefault(); choose(opt); }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
         </div>,
         document.body,
       )}

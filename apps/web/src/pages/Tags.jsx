@@ -12,7 +12,14 @@ const GI = {
   trash: Trash, search: MagnifyingGlass, arrow: ArrowDown, prev: CaretLeft, next: CaretRight,
   in: ArrowDownLeft, out: ArrowUpRight, list: ListBullets,
 };
-const COLORS = ['#2f6fe0', '#7c4dd8', '#138a72', '#e0892f', '#d6457a', '#0e7490', '#c0606a', '#16a34a', '#b45309', '#9333ea', '#0d9488', '#64748b'];
+const COLORS = [
+  '#2f6fe0', '#0284c7', '#0e7490', '#1d4ed8',
+  '#7c4dd8', '#9333ea', '#4f46e5', '#7e22ce',
+  '#138a72', '#0d9488', '#16a34a', '#15803d',
+  '#e0892f', '#b45309', '#d97706', '#ca8a04',
+  '#d6457a', '#c0606a', '#e11d48', '#dc2626',
+  '#64748b', '#475569',
+];
 
 const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');

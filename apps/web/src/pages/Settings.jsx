@@ -672,88 +672,13 @@ function AiModelModal({ model, onClose, onSave }) {
 
 // ── AI Panel (settings tab) ───────────────────────────────────────────────────
 
-function AiPanel({ d, set, onAiLoad, aiLoaded }) {
-  const [savedModels, setSavedModels] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingModel, setEditingModel] = useState(null);
-
-  useEffect(() => {
-    if (!aiLoaded) {
-      apiGet('/me/ai-settings').then((data) => {
-        onAiLoad({ enabled: data.enabled ?? false, activeModelId: data.activeModelId ?? null });
-      }).catch(() => {});
-    }
-    apiGet('/me/ai-models').then((data) => setSavedModels(data.models || [])).catch(() => {});
-  }, []);
-
-  const deleteModel = async (id) => {
-    if (!window.confirm('Delete this AI model? This cannot be undone.')) return;
-    await apiDelete(`/me/ai-models/${id}`);
-    setSavedModels((prev) => prev.filter((m) => m.id !== id));
-    if (d.aiActiveModelId === id) set('aiActiveModelId', null);
-  };
-
-  const openAdd = () => { setEditingModel(null); setModalOpen(true); };
-  const openEdit = (model) => { setEditingModel(model); setModalOpen(true); };
-
-  const onModalSave = (model, isNew) => {
-    setSavedModels((prev) => isNew ? [...prev, model] : prev.map((m) => m.id === model.id ? model : m));
-    if (isNew && savedModels.length === 0) set('aiActiveModelId', model.id);
-    setModalOpen(false);
-  };
-
+function AiPanel() {
   return (
-    <>
-      <div className="set-group-t">AI Provider</div>
-      <div className="set-group">
-        <Row title="Enable AI" sub="Allow this app to make AI-powered requests on your behalf.">
-          <Switch on={d.aiEnabled} onClick={() => set('aiEnabled', !d.aiEnabled)} />
-        </Row>
-      </div>
-
-      {d.aiEnabled && (
-        <>
-          <div className="ai-models-header">
-            <span className="set-group-t" style={{ margin: 0 }}>Saved Models</span>
-            <button className="btn-ghost ai-add-btn" onClick={openAdd}>+ Add model</button>
-          </div>
-
-          {savedModels.length === 0 ? (
-            <div className="set-group">
-              <div className="ai-empty">
-                <p>No AI models configured yet.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="set-group" style={{ gap: 0 }}>
-              {savedModels.map((model) => (
-                <div
-                  key={model.id}
-                  className={`ai-model-card${d.aiActiveModelId === model.id ? ' active' : ''}`}
-                  onClick={() => set('aiActiveModelId', model.id)}
-                >
-                  <div className="ai-model-left">
-                    <div className={`ai-model-radio${d.aiActiveModelId === model.id ? ' on' : ''}`} />
-                    <div className="ai-model-info">
-                      <b>{model.name}</b>
-                      <span>{AI_PROVIDERS.find((p) => p.value === model.provider)?.label || model.provider}</span>
-                    </div>
-                  </div>
-                  <div className="ai-model-actions">
-                    <button className="btn-ghost" style={{ fontSize: 13, padding: '5px 14px', height: 34 }}
-                      onClick={(e) => { e.stopPropagation(); openEdit(model); }}>Edit</button>
-                    <button className="btn-ghost ai-del-btn" style={{ fontSize: 13, padding: '5px 14px', height: 34 }}
-                      onClick={(e) => { e.stopPropagation(); deleteModel(model.id); }}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {modalOpen && <AiModelModal model={editingModel} onClose={() => setModalOpen(false)} onSave={onModalSave} />}
-    </>
+    <div className="ai-cs">
+      <div className="ai-cs-orb"><Brain size={28} /></div>
+      <b>Coming Soon</b>
+      <p>AI-powered features are currently under development and will be available in a future update.</p>
+    </div>
   );
 }
 
@@ -889,7 +814,7 @@ export default function Settings() {
             { profile: 'Your personal details and how we reach you.', prefs: 'Currency, budgeting logic and privacy controls.', security: 'Keep your account safe and private.', data: 'Connections, backups and exports.', ai: 'Connect an AI provider to enable AI-powered features.' }[tab]
           }</div></div>
           {tab === 'ai'
-            ? <AiPanel d={d} set={set} onAiLoad={onAiLoad} aiLoaded={aiLoaded} />
+            ? <AiPanel />
             : <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} />}
           <div className="set-foot">
             {justSaved && <span className="saved-note"><G d={GI.check} />All changes saved</span>}

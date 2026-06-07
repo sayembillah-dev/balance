@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Select from '../components/Select.jsx';
 import { MagnifyingGlass, Plus, X, ArrowDown, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
+import CatIcon from '../lib/catIcons.jsx';
 
 const TIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const TI = {
@@ -25,9 +26,13 @@ const ink = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 
 const PAGE_SIZE = 9;
 
-const Avatar = ({ name, category }) => {
+const Avatar = ({ category, subcategory }) => {
   const hex = catColor(category);
-  return <div className="tx-av" style={{ background: tint(hex), color: ink(hex) }}>{name.replace(/^\W+/, '').charAt(0).toUpperCase()}</div>;
+  return (
+    <div className="tx-av" style={{ background: tint(hex), color: ink(hex) }}>
+      <CatIcon name={subcategory || category} size={17} />
+    </div>
+  );
 };
 
 function RowMenu({ onEdit, onDup, onPreset, onDel, onClose }) {
@@ -182,7 +187,7 @@ function Transactions() {
         <div className="txn-cards">
           {slice.map((t) => (
             <div className="txn-cardrow" key={t.id} onClick={() => openDetail(t)}>
-              <Avatar name={t.merchant} category={t.category} />
+              <Avatar category={t.category} subcategory={t.subcategory} />
               <div className="tx-mid">
                 <b>{t.merchant}</b>
                 <div className="tx-sub"><i style={{ background: catColor(t.category) }} />{t.category}</div>
@@ -213,7 +218,7 @@ function Transactions() {
                   <tr key={t.id} onClick={() => openDetail(t)}>
                     <td>
                       <div className="tx-merchant">
-                        <Avatar name={t.merchant} category={t.category} />
+                        <Avatar category={t.category} subcategory={t.subcategory} />
                         <div className="tx-name"><b>{t.merchant}</b><span>{ACCT_NAME(t.account)}</span>
                           {(t.tags && t.tags.length > 0) && (
                             <div className="tx-tags">

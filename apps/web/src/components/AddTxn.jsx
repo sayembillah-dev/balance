@@ -2,9 +2,9 @@
    Opens on `balance:add-txn` (detail: { tab?, txn?: existing, presetFrom?: txn }).
    Saves transactions via window.BAL.saveTxns; presets via window.BAL.savePresets. */
 import React, { useState, useEffect } from 'react';
-import { apiUpload } from '../lib/api.js';
+import { apiUpload, apiObjectUrl } from '../lib/api.js';
 import Select from './Select.jsx';
-import { X as XIcon, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Cards, ArrowRight, Plus, PencilSimple, Trash, Play } from '@phosphor-icons/react';
+import { X as XIcon, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Cards, ArrowRight, Plus, PencilSimple, Trash, Play, Image as ImageIcon } from '@phosphor-icons/react';
 
 const X = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const IX = {
@@ -126,6 +126,14 @@ function Modal({ open, onClose }) {
   const [f, setF] = useState(editing ? { ...blankFor(initTab, accts), ...editing } : blankFor(initTab, accts));
   const [presets, setPresets] = useState(window.BAL.loadPresets());
   const [presetEdit, setPresetEdit] = useState(() => open.presetFrom ? presetFromTxn(open.presetFrom) : null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (editing?.receiptUploadId) {
+      apiObjectUrl(`/uploads/${editing.receiptUploadId}`).then(setReceiptPreviewUrl).catch(() => {});
+    }
+  }, []);
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const switchTab = (t) => {
@@ -231,18 +239,41 @@ function Modal({ open, onClose }) {
               <TxnFields f={f} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
               <div className="field"><label>Date</label><input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
               <div className="field">
-                <label>Receipt <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label>
-                {f.receiptUploadId ? (
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <span>📎 Receipt attached</span>
-                    <button type="button" className="btn-ghost" onClick={() => set('receiptUploadId', null)}>Remove</button>
+                <label>Upload Image <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label>
+                {receiptPreviewUrl ? (
+                  <div className="img-preview-wrap">
+                    <a href={receiptPreviewUrl} target="_blank" rel="noreferrer">
+                      <img src={receiptPreviewUrl} className="img-preview-thumb" alt="Attached image" />
+                    </a>
+                    <button type="button" className="img-preview-remove" aria-label="Remove image"
+                      onClick={() => { URL.revokeObjectURL(receiptPreviewUrl); setReceiptPreviewUrl(null); set('receiptUploadId', null); }}>
+                      ×
+                    </button>
                   </div>
                 ) : (
-                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={async (e) => {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    try { const { id } = await apiUpload('/uploads', file); set('receiptUploadId', id); }
-                    catch (err) { window.alert(err?.message || 'Upload failed'); }
-                  }} />
+                  <label className={`img-upload-zone${uploading ? ' uploading' : ''}`}>
+                    <ImageIcon size={26} />
+                    <span>{uploading ? 'Uploading…' : 'Click to upload'}</span>
+                    <small>PNG, JPG or WebP</small>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const localUrl = URL.createObjectURL(file);
+                        setReceiptPreviewUrl(localUrl);
+                        setUploading(true);
+                        try {
+                          const { id } = await apiUpload('/uploads', file);
+                          set('receiptUploadId', id);
+                        } catch (err) {
+                          URL.revokeObjectURL(localUrl);
+                          setReceiptPreviewUrl(null);
+                          window.alert(err?.message || 'Upload failed');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                    />
+                  </label>
                 )}
               </div>
             </div>

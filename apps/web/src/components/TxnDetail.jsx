@@ -133,10 +133,10 @@ function DetailModal({ txn, onClose }) {
                 </div>
               )}
               {receiptUrl && (
-                <div className="txnd-row">
-                  <span className="txnd-label">Receipt</span>
-                  <a href={receiptUrl} target="_blank" rel="noreferrer" className="txnd-receipt-link">View receipt</a>
-                </div>
+                <a href={receiptUrl} target="_blank" rel="noreferrer" className="txnd-img-link">
+                  <img src={receiptUrl} alt="Attached image" className="txnd-img-preview" />
+                  <span className="txnd-img-caption">Tap to view full size</span>
+                </a>
               )}
             </>
           )}

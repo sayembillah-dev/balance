@@ -559,7 +559,7 @@ html, body, #root {
 .bar.hot { background: var(--primary); }
 .bar-col small { font-size: 10.5px; color: var(--ink-3); font-weight: 600; }
 
-.prog-list { display: flex; flex-direction: column; gap: 13px; flex: 1; justify-content: center; }
+.prog-list { display: flex; flex-direction: column; gap: 13px; flex: 1; min-height: 0; overflow-y: auto; justify-content: flex-start; }
 .prog-row .prog-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
 .prog-row .prog-top span { color: var(--ink-2); font-weight: 500; }
 .prog-row .prog-top b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -574,7 +574,10 @@ html, body, #root {
 .goal-meta b { font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .goal-meta p { font-size: 11.5px; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
 
-.wlist { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.wlist { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+.wlist::-webkit-scrollbar, .prog-list::-webkit-scrollbar { width: 3px; }
+.wlist::-webkit-scrollbar-track, .prog-list::-webkit-scrollbar-track { background: transparent; }
+.wlist::-webkit-scrollbar-thumb, .prog-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 .wlist-row { display: flex; align-items: center; gap: 11px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
 .wlist-row:last-child { border-bottom: none; }
 .wlist-av { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 12.5px; font-weight: 700; flex: 0 0 auto; }
@@ -790,8 +793,7 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .txnd-cat { font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .txnd-tags-row { align-items: flex-start; padding-top: 4px; }
 .txnd-tags { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
-.txnd-receipt-link { color: var(--primary-ink); text-decoration: none; font-size: 13.5px; font-weight: 600; }
-.txnd-receipt-link:hover { text-decoration: underline; }
+
 .txnd-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px 14px; border-top: 1px solid var(--border-soft); flex-wrap: wrap; }
 .txnd-foot-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .txnd-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 7px 11px; border-radius: 9px; }
@@ -929,6 +931,23 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .tag-pick { display: flex; flex-wrap: wrap; gap: 8px; }
 .tag-opt { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); cursor: pointer; transition: border-color 0.12s, background 0.12s; }
 .tag-opt i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+
+/* ── Upload image zone ───────────────────────────────────────────────────── */
+.img-upload-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1.5px dashed var(--border); border-radius: 12px; padding: 22px 16px; cursor: pointer; transition: border-color 0.14s, background 0.14s, color 0.14s; color: var(--ink-3); text-align: center; user-select: none; }
+.img-upload-zone:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-ink); }
+.img-upload-zone svg { width: 26px; height: 26px; }
+.img-upload-zone span { font-size: 13px; font-weight: 600; }
+.img-upload-zone small { font-size: 11.5px; font-weight: 500; }
+.img-upload-zone.uploading { opacity: 0.6; pointer-events: none; }
+.img-preview-wrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.img-preview-thumb { display: block; width: 100%; max-height: 180px; object-fit: cover; }
+.img-preview-remove { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.52); border: none; color: #fff; cursor: pointer; display: grid; place-items: center; font-size: 18px; line-height: 1; transition: background 0.12s; }
+.img-preview-remove:hover { background: rgba(0,0,0,0.78); }
+
+/* ── Receipt image in TxnDetail ──────────────────────────────────────────── */
+.txnd-img-link { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); text-decoration: none; }
+.txnd-img-preview { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.txnd-img-caption { display: block; text-align: center; font-size: 11.5px; color: var(--ink-3); font-weight: 500; padding: 7px; background: var(--surface); }
 
 /* ============ ADD-TRANSACTION MODAL ============ */
 .txntabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--border-soft); padding: 4px; border-radius: 11px; margin: 14px 20px 4px; }
@@ -1197,6 +1216,10 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .ai-modal-foot { padding: 14px 26px 18px; border-top: 1px solid var(--border-soft); flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 .ai-modal-foot-btns { display: flex; justify-content: flex-end; gap: 8px; }
 .ai-modal-err { font-size: 13.5px; color: #c02626; margin: 0; }
+.ai-cs { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 48px 24px; gap: 10px; }
+.ai-cs-orb { width: 56px; height: 56px; border-radius: 50%; background: var(--primary-soft); color: var(--primary-ink); display: grid; place-items: center; margin-bottom: 4px; }
+.ai-cs b { font-size: 16px; font-weight: 700; color: var(--ink); }
+.ai-cs p { font-size: 13px; color: var(--ink-3); font-weight: 500; max-width: 280px; line-height: 1.55; margin: 0; }
 
 /* ── AI saved-model list ─────────────────────────────────────────────────── */
 .ai-models-header { display: flex; align-items: center; justify-content: space-between; margin: 6px 2px 0; }

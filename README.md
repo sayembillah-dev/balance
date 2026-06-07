@@ -59,6 +59,7 @@ Everything you need to track your money — and nothing you don't.
 services:
   db:
     image: postgres:16
+    container_name: balance-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-balance}
@@ -73,6 +74,7 @@ services:
 
   app:
     image: ghcr.io/sayembillah-dev/balance:latest
+    container_name: balance-app
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
@@ -188,6 +190,7 @@ The [`docker-compose.yml`](docker-compose.yml) file describes **two containers**
 services:
   db:                                   # ① The PostgreSQL database
     image: postgres:16                  #    Pulled ready-made from Docker Hub
+    container_name: balance-db          #    Fixed name — shows as "balance-db" in docker ps
     restart: unless-stopped             #    Auto-restarts if it crashes / on reboot
     environment:                        #    Its credentials — filled from your .env
       POSTGRES_USER: ${POSTGRES_USER:-balance}
@@ -198,7 +201,8 @@ services:
     healthcheck: ...                    #    Lets the app wait until the DB is ready
 
   app:                                  # ② The Balance app (API + website)
-    build: .                            #    Built from the Dockerfile in this folder
+    image: ghcr.io/sayembillah-dev/balance:latest  # Pre-built image from GitHub Container Registry
+    container_name: balance-app         #    Fixed name — shows as "balance-app" in docker ps
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }#    Don't start until the database is healthy
@@ -286,12 +290,13 @@ That's it — you're self-hosting Balance. 💚
 Run these from the `balance/` folder whenever you need them:
 
 ```bash
-docker compose ps              # Are my services up and healthy?
-docker compose logs -f         # Watch the logs live (Ctrl+C to stop watching)
-docker compose logs -f app     # Just the app's logs
-docker compose restart app     # Restart only the app
-docker compose stop            # Pause everything (data kept)
-docker compose down            # Stop & remove containers (data kept in volumes)
+docker compose ps                        # Are my services up and healthy?
+docker compose logs -f                   # Watch all logs live (Ctrl+C to stop)
+docker compose logs -f app               # Just the app's logs (by service name)
+docker logs -f balance-app               # Same — by container name
+docker compose restart app               # Restart only the app
+docker compose stop                      # Pause everything (data kept)
+docker compose down                      # Stop & remove containers (data kept in volumes)
 
 # Update to the latest published image
 docker compose pull && docker compose up -d
@@ -310,7 +315,7 @@ docker compose up -d --build
 
 For hacking on Balance with hot-reload across the whole stack.
 
-> **Prerequisites:** **Node 20+** and a **PostgreSQL** database to point at
+> **Prerequisites:** **Node 22+** and a **PostgreSQL** database to point at
 > (a local Postgres, a Docker one, or a free [Neon](https://neon.tech) instance).
 
 **1. Install dependencies**
@@ -484,9 +489,12 @@ emailed. Set the `SMTP_*` variables to send real emails.
 
 <br/>
 
-No. The built-in assistant runs **entirely in your browser**, grounded in your own
-data, and needs no API key. It's a local helper out of the box — you can optionally
-wire it to a real model, but nothing leaves your machine by default.
+Only if you configure it to. The assistant is **disabled by default** and requires
+you to add an AI provider in **Settings → AI Assistant**. When you do send a
+message, your financial summary is sent from *your own server* to whichever
+provider you chose (OpenAI, Anthropic, Ollama, etc.) — nothing goes anywhere
+without your explicit setup. If you use a local model (Ollama / LM Studio), data
+never leaves your machine at all.
 </details>
 
 <details>

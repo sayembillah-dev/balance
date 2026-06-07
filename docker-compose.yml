@@ -4,6 +4,7 @@
 services:
   db:
     image: postgres:16
+    container_name: balance-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-balance}
@@ -19,6 +20,7 @@ services:
   app:
     image: ghcr.io/sayembillah-dev/balance:latest
     build: .
+    container_name: balance-app
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }

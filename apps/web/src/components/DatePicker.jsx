@@ -36,7 +36,21 @@ export default function DatePicker({ value, onChange }) {
   function toggle() {
     if (open) { setOpen(false); return; }
     const r = btnRef.current.getBoundingClientRect();
-    setPos({ top: r.bottom + 4, left: r.left });
+    const POP_W = 290;
+    const POP_H = 320;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const MARGIN = 8;
+
+    let top = r.bottom + 4;
+    if (top + POP_H > vh - MARGIN) top = r.top - POP_H - 4;
+    if (top < MARGIN) top = MARGIN;
+
+    let left = r.left;
+    if (left + POP_W > vw - MARGIN) left = vw - POP_W - MARGIN;
+    if (left < MARGIN) left = MARGIN;
+
+    setPos({ top, left });
     setOpen(true);
   }
 

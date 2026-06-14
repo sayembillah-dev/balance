@@ -1467,12 +1467,13 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .date-pick-btn:hover, .date-pick-btn.open { border-color: var(--primary); }
 
 .date-pick-pop {
-  z-index: 500;
+  z-index: 9999;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 14px 34px -10px rgba(0,0,0,0.26), 0 2px 8px -2px rgba(0,0,0,0.12);
   padding: 12px;
+  max-width: calc(100vw - 16px);
   animation: sel-pop 0.12s ease;
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   font-size: 13px;

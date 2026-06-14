@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, PencilSimple, Trash, Stack, HandCoins, Sparkle, CalendarBlank, Gauge, TrendUp, Check, Warning, Target } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
+import DatePicker from '../components/DatePicker.jsx';
 
 const S = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const SI = {
@@ -84,7 +85,7 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
             </div>
             <div className="field">
               <label>Target date</label>
-              <input type="date" value={f.deadline} onChange={(e) => set('deadline', e.target.value)} />
+              <DatePicker value={f.deadline} onChange={(v) => set('deadline', v)} />
             </div>
           </div>
           {isNew && (

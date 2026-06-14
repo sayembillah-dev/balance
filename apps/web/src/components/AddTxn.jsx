@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiUpload, apiObjectUrl } from '../lib/api.js';
 import Select from './Select.jsx';
+import DatePicker from './DatePicker.jsx';
 import { X as XIcon, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Cards, ArrowRight, Plus, PencilSimple, Trash, Play, Image as ImageIcon } from '@phosphor-icons/react';
 
 const X = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
@@ -230,14 +231,14 @@ function Modal({ open, onClose }) {
               </div>
               {f.fromAccount === f.toAccount && <div className="form-hint">Choose two different accounts.</div>}
               <div className="field"><label>Note <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label><input value={f.merchant} placeholder="e.g. Move savings" onChange={(e) => set('merchant', e.target.value)} /></div>
-              <div className="field"><label>Date</label><input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
+              <div className="field"><label>Date</label><DatePicker value={f.date} onChange={(v) => set('date', v)} /></div>
             </div>
           ) : (
             <div className="modal-body">
               <div className="field"><label>Description</label><input autoFocus value={f.merchant} placeholder="e.g. Amazon" onChange={(e) => set('merchant', e.target.value)} /></div>
               <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <TxnFields f={f} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
-              <div className="field"><label>Date</label><input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
+              <div className="field"><label>Date</label><DatePicker value={f.date} onChange={(v) => set('date', v)} /></div>
               <div className="field">
                 <label>Upload Image <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label>
                 {receiptPreviewUrl ? (

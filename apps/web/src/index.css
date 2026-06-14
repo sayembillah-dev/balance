@@ -1454,3 +1454,57 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .hmap-scale > span { font-size: 10px; color: var(--ink-3); font-weight: 500; }
 .hmap-dots { display: flex; gap: 3px; align-items: center; }
 .hmap-dots i { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ============ DATE PICKER ============ */
+.date-pick-btn {
+  display: flex; align-items: center; gap: 8px;
+  height: 40px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); padding: 0 12px; font-family: inherit;
+  font-size: 13.5px; color: var(--ink); cursor: pointer; outline: none;
+  transition: border-color 0.14s ease; width: 100%; text-align: left;
+}
+.date-pick-btn svg { color: var(--ink-3); flex: 0 0 auto; }
+.date-pick-btn:hover, .date-pick-btn.open { border-color: var(--primary); }
+
+.date-pick-pop {
+  z-index: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px -10px rgba(0,0,0,0.26), 0 2px 8px -2px rgba(0,0,0,0.12);
+  padding: 12px;
+  animation: sel-pop 0.12s ease;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  /* react-day-picker v10 theme tokens */
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--primary-soft);
+  --rdp-today-color: var(--primary-ink);
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+  --rdp-nav_button-height: 2rem;
+  --rdp-nav_button-width: 2rem;
+  --rdp-nav-height: 2.25rem;
+}
+
+.date-pick-pop .rdp-month_caption { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.date-pick-pop .rdp-weekday { font-size: 11px; font-weight: 700; color: var(--ink-3); }
+.date-pick-pop .rdp-chevron { fill: var(--ink-2); }
+
+.date-pick-pop .rdp-button_next,
+.date-pick-pop .rdp-button_previous { border-radius: 7px; transition: background 0.12s ease; }
+.date-pick-pop .rdp-button_next:hover,
+.date-pick-pop .rdp-button_previous:hover { background: var(--border-soft); }
+
+.date-pick-pop .rdp-day_button:hover:not(:disabled) {
+  background-color: var(--primary-soft);
+  color: var(--primary-ink);
+}
+.date-pick-pop .rdp-selected .rdp-day_button {
+  background-color: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}

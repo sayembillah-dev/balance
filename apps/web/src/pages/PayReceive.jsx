@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
+import DatePicker from '../components/DatePicker.jsx';
 
 const PIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const PI = {
@@ -53,7 +54,7 @@ function ItemModal({ initial, kind, onSave, onClose }) {
             </div>
             <div className="field">
               <label>Due date</label>
-              <input type="date" value={f.due} onChange={(e) => set('due', e.target.value)} />
+              <DatePicker value={f.due} onChange={(v) => set('due', v)} />
             </div>
           </div>
           <div className="field">

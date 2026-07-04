@@ -160,7 +160,7 @@ export default function Auth() {
             {notice && <p style={{ color: 'var(--primary-ink, #4338ca)', fontSize: 14, margin: '2px 0 0' }}>{notice}</p>}
 
             <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? 'Please wait…' : COPY.cta}
+              {busy ? <><span className="btn-spin" />{COPY.cta}</> : COPY.cta}
             </button>
           </form>
 

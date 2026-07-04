@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import { budgetCreateSchema, budgetUpdateSchema } from '@balance/shared';
 import { db } from '../db/client.js';
-import { budgets, categories, tags } from '../db/schema/index.js';
+import { budgets, budgetPeriods, categories, tags } from '../db/schema/index.js';
 import { authedUserId } from '../auth/middleware.js';
 import { owned, softDeleteSet } from '../lib/tenancy.js';
 import { notFound } from '../lib/errors.js';
+import { catchUpBudgets } from '../lib/recurrence.js';
 import { assertOwnedIds } from './_ownership.js';
 
 export const budgetsRouter: Router = Router();
@@ -17,7 +18,25 @@ async function assertRefs(userId: string, d: { categoryId?: string | null; tagId
 
 budgetsRouter.get('/', async (req, res) => {
   const userId = authedUserId(req);
+  // Roll any recurring budgets forward and archive elapsed periods before listing.
+  // A catch-up failure must never block the read, so it's best-effort.
+  try {
+    await catchUpBudgets(userId);
+  } catch (err) {
+    console.error('[budgets] recurrence catch-up failed', err);
+  }
   const rows = await db.select().from(budgets).where(owned(budgets, userId)).orderBy(asc(budgets.name));
+  res.json(rows);
+});
+
+// Archived history for one recurring budget (most recent period first).
+budgetsRouter.get('/:id/periods', async (req, res) => {
+  const userId = authedUserId(req);
+  const rows = await db
+    .select()
+    .from(budgetPeriods)
+    .where(and(eq(budgetPeriods.userId, userId), eq(budgetPeriods.budgetId, req.params.id)))
+    .orderBy(desc(budgetPeriods.periodStart));
   res.json(rows);
 });
 

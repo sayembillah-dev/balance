@@ -502,6 +502,20 @@ html, body, #root {
 .btn-ghost { border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); }
 .btn-ghost:hover { border-color: var(--ink-3); color: var(--ink); }
 
+/* ── Inline button spinner ────────────────────────────────────────────────── */
+@keyframes btn-spin-kf { to { transform: rotate(360deg); } }
+.btn-spin {
+  display: inline-block; flex: 0 0 auto;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: btn-spin-kf 0.65s linear infinite;
+  opacity: 0.8;
+}
+/* Slightly larger on tall auth button */
+.auth .btn-spin { width: 17px; height: 17px; }
+/* Smaller on the compact SmBtn rows in Admin */
+.sm-btn .btn-spin { width: 12px; height: 12px; border-width: 1.5px; }
+
 .dash-grid { display: grid; grid-auto-rows: 158px; gap: 16px; grid-auto-flow: row dense; }
 
 .wg {
@@ -1509,3 +1523,30 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
   color: #fff;
   border-color: var(--primary);
 }
+
+/* ── Recurring budgets + pay/receive ─────────────────────────────────────── */
+/* Recurring toggle row inside the budget modal */
+.recur-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; border: 1px solid var(--border); border-radius: 12px; padding: 13px; margin-bottom: 15px; }
+.recur-txt { min-width: 0; }
+.recur-txt b { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.recur-txt b svg { width: 16px; height: 16px; color: var(--primary-ink); }
+.recur-txt p { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--ink-3); }
+
+/* Three-way repeat segment (One-off / Weekly / Monthly) */
+.recur-seg { grid-template-columns: 1fr 1fr 1fr; }
+.recur-hint { margin: 8px 2px 0; font-size: 12px; line-height: 1.45; color: var(--ink-3); }
+
+/* "Recurring" chip on cards + the chip row that holds it beside the timeframe */
+.bud-id .chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.tchip.recur { color: var(--primary-ink); background: var(--primary-soft); padding: 2px 8px; border-radius: 999px; }
+.tchip.recur svg { width: 12px; height: 12px; }
+.pr-badge.recur { background: var(--primary-soft); color: var(--primary-ink); }
+
+/* Budget history modal */
+.hist-list { display: flex; flex-direction: column; gap: 12px; }
+.hist-row { border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; }
+.hist-row.over { border-color: color-mix(in oklab, #c02626 30%, var(--border) 70%); }
+.hist-when { font-size: 12px; font-weight: 700; color: var(--ink-3); margin-bottom: 8px; }
+.hist-figs { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8px; font-size: 13px; font-weight: 700; }
+.hist-figs .spent { color: var(--ink); }
+.hist-figs .spent small { font-weight: 600; color: var(--ink-3); }

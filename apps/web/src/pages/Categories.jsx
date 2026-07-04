@@ -21,8 +21,9 @@ const COLORS = [
 
 function CatModal({ initial, type, onSave, onClose }) {
   const [f, setF] = useState(initial);
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const save = () => { if (!f.name.trim()) return; onSave({ ...f, name: f.name.trim() }); };
+  const save = () => { if (!f.name.trim()) return; setSaving(true); onSave({ ...f, name: f.name.trim() }); };
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -45,7 +46,7 @@ function CatModal({ initial, type, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{initial.id ? 'Save changes' : 'Add category'}</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Adding…'}</> : initial.id ? 'Save changes' : 'Add category'}</button>
         </div>
       </div>
     </div>

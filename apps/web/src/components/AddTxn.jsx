@@ -67,7 +67,8 @@ function PresetEditor({ initial, accts, tags, onSave, onClose }) {
   const catOpts = window.BAL.categoriesByType(p.type);
   const subOpts = (catOpts.find((c) => c.name === p.category) || {}).subs || [];
   const valid = p.name.trim() && p.merchant.trim() && (!hasAmt || p.amount);
-  const save = () => { if (!valid) return; onSave({ ...p, name: p.name.trim(), merchant: p.merchant.trim(), amount: hasAmt ? Math.abs(Number(p.amount)) : null, tags: p.tags || [] }); };
+  const [saving, setSaving] = useState(false);
+  const save = () => { if (!valid) return; setSaving(true); onSave({ ...p, name: p.name.trim(), merchant: p.merchant.trim(), amount: hasAmt ? Math.abs(Number(p.amount)) : null, tags: p.tags || [] }); };
   return (
     <div className="lib-overlay" onMouseDown={onClose} style={{ zIndex: 210 }}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -104,7 +105,7 @@ function PresetEditor({ initial, accts, tags, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save} disabled={!valid}>{initial.id ? 'Save preset' : 'Create preset'}</button>
+          <button className="btn-primary" onClick={save} disabled={!valid || saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Creating…'}</> : initial.id ? 'Save preset' : 'Create preset'}</button>
         </div>
       </div>
     </div>
@@ -129,6 +130,7 @@ function Modal({ open, onClose }) {
   const [presetEdit, setPresetEdit] = useState(() => open.presetFrom ? presetFromTxn(open.presetFrom) : null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (editing?.receiptUploadId) {
@@ -155,6 +157,7 @@ function Modal({ open, onClose }) {
 
   const save = () => {
     if (tab === 'preset' || !valid) return;
+    setSaving(true);
     let rec;
     if (tab === 'transfer') {
       const acName = (id) => (accts.find((a) => a.id === id) || {}).name || '';
@@ -283,7 +286,7 @@ function Modal({ open, onClose }) {
           {tab !== 'preset' && (
             <div className="modal-foot">
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
-              <button className="btn-primary" onClick={save} disabled={!valid}>{editing ? 'Save changes' : tab === 'transfer' ? 'Transfer' : 'Add transaction'}</button>
+              <button className="btn-primary" onClick={save} disabled={!valid || saving}>{saving ? <><span className="btn-spin" />{editing ? 'Saving…' : tab === 'transfer' ? 'Transferring…' : 'Adding…'}</> : editing ? 'Save changes' : tab === 'transfer' ? 'Transfer' : 'Add transaction'}</button>
             </div>
           )}
         </div>

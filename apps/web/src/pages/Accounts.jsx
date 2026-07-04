@@ -52,8 +52,9 @@ const signOf = (t) => t.type === 'income' ? '+' : t.type === 'expense' ? '−' :
 
 function AccountModal({ initial, onSave, onClose }) {
   const [f, setF] = useState(initial);
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const save = () => { if (!f.name.trim()) return; onSave({ ...f, opening: Number(f.opening) || 0 }); };
+  const save = () => { if (!f.name.trim()) return; setSaving(true); onSave({ ...f, opening: Number(f.opening) || 0 }); };
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -92,7 +93,7 @@ function AccountModal({ initial, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{initial.id ? 'Save changes' : 'Add account'}</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Adding…'}</> : initial.id ? 'Save changes' : 'Add account'}</button>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   index,
+  uniqueIndex,
   check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -16,6 +17,7 @@ import {
   budgetModeEnum,
   noteTypeEnum,
   payReceiveKindEnum,
+  recurrenceFreqEnum,
 } from '../enums.js';
 import { users } from './users.js';
 import { categories, tags } from './finance.js';
@@ -41,6 +43,11 @@ export const budgets = pgTable(
     }),
     tagId: uuid('tag_id').references(() => tags.id, { onDelete: 'cascade' }),
     mode: budgetModeEnum('mode'),
+    // When true, the budget auto-renews at the end of each `timeframe` period:
+    // the elapsed period is snapshotted into `budget_periods` and `periodStart`
+    // advances. NULL `periodStart` = never anchored (set when recurring turns on).
+    recurring: boolean('recurring').notNull().default(false),
+    periodStart: date('period_start'),
     ...audit,
   },
   (t) => [
@@ -53,6 +60,35 @@ export const budgets = pgTable(
         (${t.track} = 'tag' and ${t.tagId} is not null and ${t.mode} is not null)
       )`,
     ),
+  ],
+);
+
+/**
+ * Archived snapshot of one elapsed period of a recurring budget. Written by the
+ * recurrence catch-up when a period closes: it freezes the cap in force at that
+ * time and the total expense spent within [periodStart, periodEnd). The current,
+ * in-progress period is never stored here — it's computed live from transactions.
+ */
+export const budgetPeriods = pgTable(
+  'budget_periods',
+  {
+    id: pk(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    budgetId: uuid('budget_id')
+      .notNull()
+      .references(() => budgets.id, { onDelete: 'cascade' }),
+    periodStart: date('period_start').notNull(),
+    periodEnd: date('period_end').notNull(), // exclusive: the next period's start
+    capMinor: money('cap_minor'),
+    spentMinor: money('spent_minor').default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index('budget_periods_budget_idx').on(t.budgetId),
+    index('budget_periods_user_idx').on(t.userId),
+    uniqueIndex('budget_periods_budget_start_uq').on(t.budgetId, t.periodStart),
   ],
 );
 
@@ -133,7 +169,16 @@ export const payReceive = pgTable(
     note: text('note'),
     settled: boolean('settled').notNull().default(false),
     settledOn: date('settled_on'),
+    // NULL = one-off. When set, this occurrence is the "spawner": once its
+    // dueDate passes, the catch-up creates the next occurrence (carrying the
+    // recurrence forward) and clears `recurrence` here. `seriesId` links every
+    // occurrence of a series (= the first occurrence's id) for grouping.
+    recurrence: recurrenceFreqEnum('recurrence'),
+    seriesId: uuid('series_id'),
     ...audit,
   },
-  (t) => [index('payrecv_user_idx').on(t.userId)],
+  (t) => [
+    index('payrecv_user_idx').on(t.userId),
+    index('payrecv_series_idx').on(t.seriesId),
+  ],
 );

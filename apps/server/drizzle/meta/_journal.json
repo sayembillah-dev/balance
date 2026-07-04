@@ -50,6 +50,13 @@
       "when": 1749290000000,
       "tag": "0006_ai_models",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783185629246,
+      "tag": "0007_loud_the_stranger",
+      "breakpoints": true
     }
   ]
 }

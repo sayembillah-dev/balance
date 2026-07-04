@@ -305,7 +305,7 @@ function SecurityPanel({ a }) {
         <Row title="Sign out everywhere" sub="End every active session, including this one. You'll sign in again."><button className="btn-ghost" onClick={a.signOutAll}>Sign out all devices</button></Row>
       </div>
       <div className="set-group">
-        <Row danger title="Delete account" sub="Permanently remove your account and all data. This cannot be undone."><button className="btn-ghost" style={{ color: '#c02626', borderColor: 'color-mix(in oklab,#e23b3b 30%,#fff)' }} onClick={a.deleteAccount}>Delete</button></Row>
+        <Row danger title="Delete account" sub="Permanently remove your account and all data. This cannot be undone."><button className="btn-ghost" disabled={a.busyDel} style={{ color: '#c02626', borderColor: 'color-mix(in oklab,#e23b3b 30%,#fff)', display: 'inline-flex', alignItems: 'center', gap: 7 }} onClick={a.deleteAccount}>{a.busyDel && <span className="btn-spin" />}Delete</button></Row>
       </div>
     </>
   );
@@ -714,7 +714,7 @@ function ChangePasswordModal({ onClose, onDone }) {
           <input className="txn-field" type="password" placeholder="Current password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} autoFocus />
           <input className="txn-field" type="password" placeholder="New password (min 8 characters)" autoComplete="new-password" value={nw} onChange={(e) => setNw(e.target.value)} />
           {err && <p style={{ color: '#dc2626', margin: 0, fontSize: 14 }}>{err}</p>}
-          <button className="btn-primary" disabled={busy || !cur || !nw}>{busy ? 'Saving…' : 'Update password'}</button>
+          <button className="btn-primary" disabled={busy || !cur || !nw}>{busy ? <><span className="btn-spin" />Saving…</> : 'Update password'}</button>
         </form>
       </div>
     </div>
@@ -729,8 +729,10 @@ export default function Settings() {
   const [justSaved, setJustSaved] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [aiLoaded, setAiLoaded] = useState(false);
+  const [busyDel, setBusyDel] = useState(false);
 
   const actions = {
+    busyDel,
     changePassword: () => setPwOpen(true),
     signOutAll: async () => {
       if (!window.confirm('Sign out of all devices? You will need to sign in again.')) return;
@@ -740,8 +742,9 @@ export default function Settings() {
     deleteAccount: async () => {
       if (!window.confirm('Permanently delete your account and ALL your data? This cannot be undone.')) return;
       if (window.prompt('Type DELETE to confirm:') !== 'DELETE') return;
+      setBusyDel(true);
       try { await apiDelete('/me'); await logout(); }
-      catch (e) { window.alert(e?.message || 'Could not delete account.'); }
+      catch (e) { window.alert(e?.message || 'Could not delete account.'); setBusyDel(false); }
     },
     exportCsv: () => {
       const txns = window.BAL.loadTxns();

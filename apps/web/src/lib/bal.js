@@ -300,6 +300,8 @@ const adaptBudget = (b) => ({
   id: b.id, name: b.name, amount: toMajor(b.amountMinor, CUR), timeframe: b.timeframe,
   track: b.track, category: b.categoryId ? catIdToName.get(b.categoryId) : undefined,
   tagId: b.tagId || undefined, mode: b.mode || undefined,
+  // `recurring` = auto-renew + archive each period; `periodStart` is server-managed.
+  recurring: !!b.recurring, periodStart: b.periodStart || undefined,
 });
 const toApiBudget = (b) => ({
   id: b.id, name: b.name, amountMinor: toMinor(Number(b.amount) || 0, CUR),
@@ -307,8 +309,18 @@ const toApiBudget = (b) => ({
   categoryId: b.track === 'category' ? catNameToId(b.category) : null,
   tagId: b.track === 'tag' ? b.tagId || null : null,
   mode: b.track === 'tag' ? b.mode || 'parallel' : null,
+  recurring: !!b.recurring, // periodStart is server-managed, never sent back
 });
 function loadBudgets() { return budgets; }
+// Archived period history for a recurring budget (returned newest-first). Async,
+// fetched on demand by the history view — not part of the hydrate/cache flow.
+async function budgetPeriods(id) {
+  const rows = await apiGet(`/budgets/${id}/periods`);
+  return rows.map((p) => ({
+    id: p.id, periodStart: p.periodStart, periodEnd: p.periodEnd,
+    cap: toMajor(p.capMinor, CUR), spent: toMajor(p.spentMinor, CUR),
+  }));
+}
 function saveBudgets(list) {
   const old = budgets; budgets = list; emitChanged();
   syncFlat('/budgets', old, list, toApiBudget, refillBudgets);
@@ -369,10 +381,13 @@ function saveNotes(list) {
 const adaptPR = (p) => ({
   id: p.id, kind: p.kind, party: p.party, amount: toMajor(p.amountMinor, CUR),
   due: p.dueDate, note: p.note, settled: p.settled, settledOn: p.settledOn,
+  // `recurrence` = 'weekly' | 'monthly' | null; `seriesId` links occurrences.
+  recurrence: p.recurrence || null, seriesId: p.seriesId || null,
 });
 const toApiPR = (p) => ({
   id: p.id, kind: p.kind, party: p.party, amountMinor: toMinor(Number(p.amount) || 0, CUR),
   dueDate: p.due || null, note: p.note || null, settled: !!p.settled, settledOn: p.settledOn || null,
+  recurrence: p.recurrence || null, // seriesId is server-managed, never sent back
 });
 function loadPayRecv() { return payrecv; }
 function savePayRecv(list) {
@@ -508,7 +523,7 @@ const BAL = {
   loadCategories, saveCategories, catColor, catNames, categoriesByType,
   loadTags, saveTags, tag,
   loadPresets, savePresets,
-  loadBudgets, saveBudgets,
+  loadBudgets, saveBudgets, budgetPeriods,
   loadSavings, saveSavings,
   loadNotes, saveNotes,
   loadPayRecv, savePayRecv,

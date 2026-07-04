@@ -36,11 +36,12 @@ const load = () => window.BAL.loadNotes();
 
 function NoteModal({ initial, onSave, onClose }) {
   const [f, setF] = useState(initial);
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const isNote = f.type === 'note';
   const save = () => {
     if (!f.title.trim() && (isNote ? !(f.body || '').trim() : true)) { if (!f.title.trim()) return; }
-    onSave({ ...f, title: f.title.trim() });
+    setSaving(true); onSave({ ...f, title: f.title.trim() });
   };
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
@@ -70,7 +71,7 @@ function NoteModal({ initial, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{initial.id ? 'Save changes' : 'Create'}</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Creating…'}</> : initial.id ? 'Save changes' : 'Create'}</button>
         </div>
       </div>
     </div>

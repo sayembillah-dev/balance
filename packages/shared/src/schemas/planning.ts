@@ -5,6 +5,7 @@ import {
   BUDGET_MODES,
   NOTE_TYPES,
   PAY_RECEIVE_KINDS,
+  RECURRENCE_FREQUENCIES,
 } from '../enums.js';
 
 const enumOf = <T extends readonly [string, ...string[]]>(vals: T) =>
@@ -26,6 +27,10 @@ export const budgetCreateSchema = z
     categoryId: uuid.nullish(),
     tagId: uuid.nullish(),
     mode: enumOf(BUDGET_MODES).nullish(),
+    // When on, the budget auto-renews at the end of each `timeframe` period and
+    // the elapsed period is archived (cap vs. actual spent). `periodStart` is
+    // server-managed, so it isn't accepted from the client.
+    recurring: z.boolean().default(false),
   })
   .superRefine((d, ctx) => {
     if (d.track === 'category' && !d.categoryId) {
@@ -43,6 +48,7 @@ export const budgetUpdateSchema = z.object({
   categoryId: uuid.nullish(),
   tagId: uuid.nullish(),
   mode: enumOf(BUDGET_MODES).nullish(),
+  recurring: z.boolean().optional(),
 });
 
 // ── Savings (pool singleton + goals) ─────────────────────────────────────────
@@ -81,7 +87,7 @@ export const noteUpdateSchema = z.object({
 });
 
 // ── Pay & Receive ────────────────────────────────────────────────────────────
-export const payReceiveCreateSchema = z.object({
+const payReceiveBase = z.object({
   id: clientId,
   kind: enumOf(PAY_RECEIVE_KINDS),
   party: z.string().trim().min(1).max(160),
@@ -90,8 +96,21 @@ export const payReceiveCreateSchema = z.object({
   note: z.string().max(500).nullish(),
   settled: z.boolean().default(false),
   settledOn: isoDate.nullish(),
+  // null = one-off. When set, the server auto-creates the next occurrence once
+  // its due date arrives (regardless of whether this one is settled). `seriesId`
+  // links occurrences and is server-managed, so it isn't accepted here.
+  recurrence: enumOf(RECURRENCE_FREQUENCIES).nullish(),
 });
-export const payReceiveUpdateSchema = payReceiveCreateSchema.partial();
+export const payReceiveCreateSchema = payReceiveBase.superRefine((d, ctx) => {
+  if (d.recurrence && !d.dueDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['dueDate'],
+      message: 'a recurring item needs a due date to anchor the schedule',
+    });
+  }
+});
+export const payReceiveUpdateSchema = payReceiveBase.partial();
 
 // ── Settings + profile + dashboard ───────────────────────────────────────────
 export const settingsUpdateSchema = z.object({

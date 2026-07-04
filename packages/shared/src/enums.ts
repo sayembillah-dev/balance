@@ -35,6 +35,12 @@ export type NoteType = (typeof NOTE_TYPES)[number];
 export const PAY_RECEIVE_KINDS = ['receivable', 'payable'] as const;
 export type PayReceiveKind = (typeof PAY_RECEIVE_KINDS)[number];
 
+// How often a recurring entry repeats. Used by pay/receive (an explicit column)
+// and available to any future recurring entity. Budgets don't use this — they
+// recur on their own Weekly/Monthly/Yearly `timeframe` via a boolean toggle.
+export const RECURRENCE_FREQUENCIES = ['weekly', 'monthly'] as const;
+export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
+
 export const USER_ROLES = ['user', 'admin'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 

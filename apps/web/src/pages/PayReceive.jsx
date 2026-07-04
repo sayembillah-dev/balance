@@ -2,15 +2,17 @@
    Two tabs: Receivables (money owed to you) and Payables (money you owe).
    Create / edit / delete, mark settled / unmark, totals. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet, ArrowsClockwise } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 import DatePicker from '../components/DatePicker.jsx';
 
 const PIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const PI = {
   plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash, check: Check,
-  undo: ArrowCounterClockwise, in: ArrowDownLeft, out: ArrowUpRight, clock: Clock, wallet: Wallet,
+  undo: ArrowCounterClockwise, in: ArrowDownLeft, out: ArrowUpRight, clock: Clock, wallet: Wallet, recur: ArrowsClockwise,
 };
+const RECUR_OPTS = [{ value: '', label: 'One-off' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }];
+const recurLabel = (r) => (r === 'weekly' ? 'Repeats weekly' : r === 'monthly' ? 'Repeats monthly' : 'Recurring');
 const STORE = 'balance.payrecv.v1';
 const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
@@ -33,8 +35,12 @@ const inkc = (hex) => `color-mix(in oklab, ${hex} 78%, #000 22%)`;
 function ItemModal({ initial, kind, onSave, onClose }) {
   const [f, setF] = useState(initial);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const save = () => { if (!f.party.trim() || !f.amount) return; onSave({ ...f, party: f.party.trim(), amount: Math.abs(Number(f.amount)) }); };
+  const rec = f.recurrence || '';
   const noun = kind === 'receivable' ? 'receivable' : 'payable';
+  // A recurring item needs a due date to anchor the schedule.
+  const valid = f.party.trim() && f.amount && !(rec && !f.due);
+  const [saving, setSaving] = useState(false);
+  const save = () => { if (!valid) return; setSaving(true); onSave({ ...f, party: f.party.trim(), amount: Math.abs(Number(f.amount)) }); };
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -53,9 +59,20 @@ function ItemModal({ initial, kind, onSave, onClose }) {
               <input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} />
             </div>
             <div className="field">
-              <label>Due date</label>
+              <label>Due date{rec && <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}> (required)</span>}</label>
               <DatePicker value={f.due} onChange={(v) => set('due', v)} />
             </div>
+          </div>
+          <div className="field">
+            <label>Repeat</label>
+            <div className="track-seg recur-seg">
+              {RECUR_OPTS.map((o) => (
+                <button type="button" key={o.label} className={rec === o.value ? 'on' : ''} onClick={() => set('recurrence', o.value)}>
+                  {o.value && <PIco d={PI.recur} />}{o.label}
+                </button>
+              ))}
+            </div>
+            {rec && <p className="recur-hint">The next {noun} is created automatically every {rec === 'weekly' ? 'week' : 'month'} once each due date arrives.</p>}
           </div>
           <div className="field">
             <label>Note <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label>
@@ -64,7 +81,7 @@ function ItemModal({ initial, kind, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{initial.id ? 'Save changes' : `Add ${noun}`}</button>
+          <button className="btn-primary" onClick={save} disabled={!valid || saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Adding…'}</> : initial.id ? 'Save changes' : `Add ${noun}`}</button>
         </div>
       </div>
     </div>
@@ -102,6 +119,7 @@ function Item({ it, onToggle, onEdit, onDel, menuOpen, setMenu }) {
             : overdue
               ? <><span className="pr-badge overdue"><PIco d={PI.clock} />Overdue</span><span className="when">{fmtDate(it.due)}</span></>
               : <><span className="pr-badge pending"><PIco d={PI.clock} />Due</span><span className="when">{fmtDate(it.due)}</span></>}
+          {(it.recurrence || it.seriesId) && <span className="pr-badge recur" title={recurLabel(it.recurrence)}><PIco d={PI.recur} />{recurLabel(it.recurrence)}</span>}
           {it.note && <span className="dot-sep">·</span>}
           {it.note && <span className="note">{it.note}</span>}
         </div>
@@ -150,7 +168,7 @@ export default function PayReceive() {
   const sorted = [...list].sort((a, b) => (a.settled - b.settled) || (a.due || '').localeCompare(b.due || ''));
 
   const recv = kind === 'receivable';
-  const blank = { kind, party: '', amount: '', due: TODAY, note: '', settled: false };
+  const blank = { kind, party: '', amount: '', due: TODAY, note: '', settled: false, recurrence: '' };
 
   return (
     <div className="pr">

@@ -38,8 +38,9 @@ const tagStats = (id, txns) => {
 
 function TagModal({ initial, onSave, onClose }) {
   const [f, setF] = useState(initial);
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const save = () => { if (!f.name.trim()) return; onSave({ ...f, name: f.name.trim() }); };
+  const save = () => { if (!f.name.trim()) return; setSaving(true); onSave({ ...f, name: f.name.trim() }); };
   return (
     <div className="lib-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -65,7 +66,7 @@ function TagModal({ initial, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{initial.id ? 'Save changes' : 'Add tag'}</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>{saving ? <><span className="btn-spin" />{initial.id ? 'Saving…' : 'Adding…'}</> : initial.id ? 'Save changes' : 'Add tag'}</button>
         </div>
       </div>
     </div>

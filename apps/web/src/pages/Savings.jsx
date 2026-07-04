@@ -56,8 +56,10 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const isNew = !initial.id;
   const initialMax = unalloc;
+  const [saving, setSaving] = useState(false);
   const save = () => {
     if (!f.title.trim() || !f.target) return;
+    setSaving(true);
     onSave({ ...f, title: f.title.trim(), target: Math.abs(Number(f.target)), saved: isNew ? Math.min(Number(f.saved) || 0, initialMax) : f.saved });
   };
   return (
@@ -97,7 +99,7 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
         </div>
         <div className="modal-foot">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={save}>{isNew ? 'Create goal' : 'Save changes'}</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>{saving ? <><span className="btn-spin" />{isNew ? 'Creating…' : 'Saving…'}</> : isNew ? 'Create goal' : 'Save changes'}</button>
         </div>
       </div>
     </div>

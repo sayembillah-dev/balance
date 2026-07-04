@@ -55,8 +55,11 @@ const Toggle = ({ checked, onChange }) => (
   </button>
 );
 
-const SmBtn = ({ style, ...props }) => (
-  <button className="btn-ghost" style={{ height: 30, fontSize: 12, padding: '0 10px', ...style }} {...props} />
+const SmBtn = ({ style, loading, children, ...props }) => (
+  <button className="btn-ghost sm-btn" disabled={loading || props.disabled}
+    style={{ height: 30, fontSize: 12, padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: 5, ...style }} {...props}>
+    {loading && <span className="btn-spin" />}{children}
+  </button>
 );
 
 export default function Admin() {
@@ -69,33 +72,35 @@ export default function Admin() {
   const [newInvite, setNewInvite] = useState({ email: '', role: 'user', expiresInDays: 7 });
   const [lastLink, setLastLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [busyOp, setBusyOp] = useState('');
 
-  const guard = (fn) => async (...a) => {
-    setErr('');
+  const guard = (key, fn) => async (...a) => {
+    setErr(''); setBusyOp(key(...a));
     try { return await fn(...a); } catch (e) { setErr(e?.message || 'Action failed'); }
+    finally { setBusyOp(''); }
   };
 
-  const loadUsers = useCallback(guard(async () => setUsers(await apiGet('/admin/users'))), []);
-  const loadInvites = useCallback(guard(async () => setInvites(await apiGet('/admin/invitations'))), []);
-  const loadSettings = useCallback(guard(async () => setSettings(await apiGet('/admin/settings'))), []);
+  const loadUsers = useCallback(guard(() => 'load-users', async () => setUsers(await apiGet('/admin/users'))), []);
+  const loadInvites = useCallback(guard(() => 'load-invites', async () => setInvites(await apiGet('/admin/invitations'))), []);
+  const loadSettings = useCallback(guard(() => 'load-settings', async () => setSettings(await apiGet('/admin/settings'))), []);
 
   useEffect(() => { loadUsers(); loadInvites(); loadSettings(); }, [loadUsers, loadInvites, loadSettings]);
 
-  const setRole = guard(async (u, role) => { await apiPatch(`/admin/users/${u.id}`, { role }); loadUsers(); });
-  const setActive = guard(async (u, isActive) => { await apiPatch(`/admin/users/${u.id}`, { isActive }); loadUsers(); });
-  const forceLogout = guard(async (u) => { await apiPost(`/admin/users/${u.id}/logout`, {}); });
-  const setPassword = guard(async (u) => {
+  const setRole = guard((u) => `role-${u.id}`, async (u, role) => { await apiPatch(`/admin/users/${u.id}`, { role }); loadUsers(); });
+  const setActive = guard((u) => `active-${u.id}`, async (u, isActive) => { await apiPatch(`/admin/users/${u.id}`, { isActive }); loadUsers(); });
+  const forceLogout = guard((u) => `logout-${u.id}`, async (u) => { await apiPost(`/admin/users/${u.id}/logout`, {}); });
+  const setPassword = guard((u) => `pw-${u.id}`, async (u) => {
     const pw = window.prompt(`New password for ${u.email} (min 8 chars):`);
     if (!pw) return;
     await apiPost(`/admin/users/${u.id}/set-password`, { password: pw });
     window.alert('Password updated. The user has been signed out everywhere.');
   });
-  const delUser = guard(async (u) => {
+  const delUser = guard((u) => `del-${u.id}`, async (u) => {
     if (!window.confirm(`Delete ${u.email}? This removes all their data and cannot be undone.`)) return;
     await apiDelete(`/admin/users/${u.id}`); loadUsers();
   });
 
-  const createInvite = guard(async (e) => {
+  const createInvite = guard(() => 'create-invite', async (e) => {
     e.preventDefault();
     const body = { role: newInvite.role, expiresInDays: Number(newInvite.expiresInDays) };
     if (newInvite.email.trim()) body.email = newInvite.email.trim();
@@ -105,7 +110,7 @@ export default function Admin() {
     setNewInvite({ email: '', role: 'user', expiresInDays: 7 });
     loadInvites();
   });
-  const revokeInvite = guard(async (i) => { await apiDelete(`/admin/invitations/${i.id}`); loadInvites(); });
+  const revokeInvite = guard((i) => `revoke-${i.id}`, async (i) => { await apiDelete(`/admin/invitations/${i.id}`); loadInvites(); });
 
   const copyLink = () => {
     navigator.clipboard?.writeText(lastLink);
@@ -113,7 +118,7 @@ export default function Admin() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const saveSettings = guard(async (patch) => setSettings(await apiPatch('/admin/settings', patch)));
+  const saveSettings = guard(() => 'save-settings', async (patch) => setSettings(await apiPatch('/admin/settings', patch)));
 
   const inviteStatus = (i) => {
     if (i.acceptedAt) return 'accepted';
@@ -168,15 +173,15 @@ export default function Admin() {
                           <span style={{ color: 'var(--ink-3)', fontSize: 13 }}>—</span>
                         ) : (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <SmBtn onClick={() => setRole(u, u.role === 'admin' ? 'user' : 'admin')}>
+                            <SmBtn loading={busyOp === `role-${u.id}`} onClick={() => setRole(u, u.role === 'admin' ? 'user' : 'admin')}>
                               {u.role === 'admin' ? 'Make user' : 'Make admin'}
                             </SmBtn>
-                            <SmBtn onClick={() => setActive(u, !u.isActive)}>
+                            <SmBtn loading={busyOp === `active-${u.id}`} onClick={() => setActive(u, !u.isActive)}>
                               {u.isActive ? 'Deactivate' : 'Activate'}
                             </SmBtn>
-                            <SmBtn onClick={() => setPassword(u)}>Set password</SmBtn>
-                            <SmBtn onClick={() => forceLogout(u)}>Sign out</SmBtn>
-                            <SmBtn style={{ color: '#dc2626' }} onClick={() => delUser(u)}>Delete</SmBtn>
+                            <SmBtn loading={busyOp === `pw-${u.id}`} onClick={() => setPassword(u)}>Set password</SmBtn>
+                            <SmBtn loading={busyOp === `logout-${u.id}`} onClick={() => forceLogout(u)}>Sign out</SmBtn>
+                            <SmBtn loading={busyOp === `del-${u.id}`} style={{ color: '#dc2626' }} onClick={() => delUser(u)}>Delete</SmBtn>
                           </div>
                         )}
                       </td>
@@ -218,7 +223,9 @@ export default function Admin() {
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-primary" type="submit">Create invite</button>
+                <button className="btn-primary" type="submit" disabled={busyOp === 'create-invite'}>
+                  {busyOp === 'create-invite' ? <><span className="btn-spin" />Creating…</> : 'Create invite'}
+                </button>
               </div>
             </form>
           </div>
@@ -267,7 +274,7 @@ export default function Admin() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {status === 'pending' && (
-                          <SmBtn style={{ color: '#dc2626' }} onClick={() => revokeInvite(i)}>Revoke</SmBtn>
+                          <SmBtn loading={busyOp === `revoke-${i.id}`} style={{ color: '#dc2626' }} onClick={() => revokeInvite(i)}>Revoke</SmBtn>
                         )}
                       </td>
                     </tr>
@@ -301,8 +308,8 @@ export default function Admin() {
                   onChange={(e) => setSettings({ ...settings, instanceName: e.target.value })}
                   onKeyDown={(e) => e.key === 'Enter' && saveSettings({ instanceName: settings.instanceName })} />
               </div>
-              <button className="btn-primary" onClick={() => saveSettings({ instanceName: settings.instanceName })}>
-                Save
+              <button className="btn-primary" disabled={busyOp === 'save-settings'} onClick={() => saveSettings({ instanceName: settings.instanceName })}>
+                {busyOp === 'save-settings' ? <><span className="btn-spin" />Saving…</> : 'Save'}
               </button>
             </div>
           </div>

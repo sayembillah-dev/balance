@@ -6,11 +6,19 @@ import { payReceive } from '../db/schema/index.js';
 import { authedUserId } from '../auth/middleware.js';
 import { owned, softDeleteSet } from '../lib/tenancy.js';
 import { notFound } from '../lib/errors.js';
+import { catchUpPayReceive } from '../lib/recurrence.js';
 
 export const payReceiveRouter: Router = Router();
 
 payReceiveRouter.get('/', async (req, res) => {
   const userId = authedUserId(req);
+  // Spawn any recurring occurrences that have come due before listing.
+  // Best-effort: a catch-up failure must never block the read.
+  try {
+    await catchUpPayReceive(userId);
+  } catch (err) {
+    console.error('[pay-receive] recurrence catch-up failed', err);
+  }
   const rows = await db
     .select()
     .from(payReceive)

@@ -7,6 +7,7 @@ import {
   BUDGET_MODES,
   NOTE_TYPES,
   PAY_RECEIVE_KINDS,
+  RECURRENCE_FREQUENCIES,
   USER_ROLES,
 } from '@balance/shared';
 
@@ -21,4 +22,5 @@ export const budgetTrackEnum = pgEnum('budget_track', BUDGET_TRACKS);
 export const budgetModeEnum = pgEnum('budget_mode', BUDGET_MODES);
 export const noteTypeEnum = pgEnum('note_type', NOTE_TYPES);
 export const payReceiveKindEnum = pgEnum('pay_receive_kind', PAY_RECEIVE_KINDS);
+export const recurrenceFreqEnum = pgEnum('recurrence_freq', RECURRENCE_FREQUENCIES);
 export const userRoleEnum = pgEnum('user_role', USER_ROLES);

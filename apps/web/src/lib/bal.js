@@ -49,6 +49,23 @@ function today() {
   try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
   catch { return new Date().toISOString().slice(0, 10); }
 }
+// First calendar day (YYYY-MM-DD) of the current budget period for a given
+// timeframe, in the user's timezone. Budgets count only spending on/after this
+// day, so a fresh budget doesn't inherit prior months/weeks/years of expenses.
+function budgetPeriodStart(timeframe) {
+  const [y, m, d] = today().split('-').map(Number);
+  if (timeframe === 'Yearly') return `${y}-01-01`;
+  if (timeframe === 'Weekly') {
+    // Week starts Monday; walk back to it as a wall-clock calendar date.
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); // Mon=0 … Sun=6
+    const p = (n) => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+  }
+  // Monthly (default)
+  return `${y}-${String(m).padStart(2, '0')}-01`;
+}
+
 // Format a date for display. Date-only strings (YYYY-MM-DD) are wall-clock
 // calendar dates with no zone, so they're rendered as-is (never shifted a day).
 // Real timestamps are formatted in the user's timezone, with time when asked.
@@ -484,7 +501,7 @@ function clearCache() {
 const BAL = {
   newId,
   fmt, sym, currency, setCurrency,
-  tz, today, fmtDate,
+  tz, today, fmtDate, budgetPeriodStart,
   hydrate, clearCache,
   loadAccounts, saveAccounts,
   loadTxns, saveTxns,

@@ -24,11 +24,17 @@ const SEED = [
 ];
 const load = () => window.BAL.loadBudgets();
 
-const spentFor = (b, txns) => txns.reduce((s, t) => {
-  if (t.type !== 'expense') return s;
-  if (b.track === 'category') return t.category === b.category ? s + t.amount : s;
-  return (t.tags || []).includes(b.tagId) ? s + t.amount : s;
-}, 0);
+const spentFor = (b, txns) => {
+  const start = window.BAL.budgetPeriodStart(b.timeframe);
+  return txns.reduce((s, t) => {
+    if (t.type !== 'expense') return s;
+    // Only count transactions in the current period. Date-only strings sort
+    // lexicographically, so a plain string compare is a valid date compare.
+    if (!t.date || String(t.date).slice(0, 10) < start) return s;
+    if (b.track === 'category') return t.category === b.category ? s + t.amount : s;
+    return (t.tags || []).includes(b.tagId) ? s + t.amount : s;
+  }, 0);
+};
 
 const tagName = (tags, id) => { const t = tags.find((x) => x.id === id); return t ? t.name : 'tag'; };
 

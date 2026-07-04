@@ -404,9 +404,11 @@ function computeDashboard() {
     .map((p) => ({ av: (p.party || '?').charAt(0).toUpperCase(), name: p.party, meta: p.due ? `Due ${fmtShort(p.due)}` : 'No due date', amt: inr(p.amount) }));
 
   const budgetRows = (budgets || []).slice(0, 4).map((b) => {
+    // Scope to the budget's own timeframe so this matches the Budgets page.
+    const start = window.BAL.budgetPeriodStart(b.timeframe);
     let spent = 0;
     for (const t of txns) {
-      if (t.type !== 'expense' || ym(t.date) !== curYM) continue;
+      if (t.type !== 'expense' || !t.date || String(t.date).slice(0, 10) < start) continue;
       if (b.track === 'category' && t.category === b.category) spent += t.amount;
       else if (b.track === 'tag' && (t.tags || []).includes(b.tagId)) spent += t.amount;
     }

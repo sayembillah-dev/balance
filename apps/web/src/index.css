@@ -962,6 +962,30 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .txnd-img-preview { display: block; width: 100%; max-height: 220px; object-fit: cover; }
 .txnd-img-caption { display: block; text-align: center; font-size: 11.5px; color: var(--ink-3); font-weight: 500; padding: 7px; background: var(--surface); }
 
+/* ── Split transaction modal ──────────────────────────────────────────────── */
+.split-modal { width: min(480px, 100%); }
+.split-body { gap: 10px; }
+.split-orig { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-2, var(--border-soft)); border-radius: 12px; border: 1px solid var(--border); }
+.split-orig-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.split-orig-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.split-orig-merchant { font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.split-orig-amt { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.split-list { display: flex; flex-direction: column; gap: 6px; }
+.split-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 10px; }
+.split-row-left { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+.split-av { width: 28px; height: 28px; border-radius: 7px; font-size: 11px; }
+.split-row-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.split-row-merchant { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.split-row-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.split-row-amt { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.split-remove { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-3); display: grid; place-items: center; cursor: pointer; transition: color 0.12s, border-color 0.12s; }
+.split-remove:hover { color: #c02626; border-color: #e23b3b; background: color-mix(in oklab, #e23b3b 8%, var(--surface) 92%); }
+.split-add-btn { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; background: none; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--primary); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.split-add-btn:hover { background: color-mix(in oklab, var(--primary) 6%, transparent 94%); border-color: var(--primary); }
+.split-form { display: flex; flex-direction: column; gap: 11px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2, color-mix(in oklab, var(--primary) 3%, var(--surface) 97%)); }
+.split-form-head { font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.split-form-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 2px; }
+
 /* ============ ADD-TRANSACTION MODAL ============ */
 .txntabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--border-soft); padding: 4px; border-radius: 11px; margin: 14px 20px 4px; }
 .txntabs button { border: none; background: none; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2); padding: 9px 4px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.14s, color 0.14s; }

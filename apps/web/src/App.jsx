@@ -19,6 +19,7 @@ import Settings from './pages/Settings.jsx';
 import Admin from './pages/Admin.jsx';
 import AddTxn from './components/AddTxn.jsx';
 import TxnDetail from './components/TxnDetail.jsx';
+import SplitModal from './components/SplitModal.jsx';
 import AiChat from './components/AiChat.jsx';
 import {
   SquaresFour, Receipt, CreditCard, Stack, Tag, PiggyBank, HandCoins, Note, ChartDonut,
@@ -245,6 +246,7 @@ export default function App() {
 
       <AddTxn />
       <TxnDetail />
+      <SplitModal />
       <AiChat />
     </>
   );

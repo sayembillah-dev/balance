@@ -3,7 +3,7 @@
    Responsive: table on wide containers, card list on narrow (mobile/tablet). */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
-import { MagnifyingGlass, Plus, X, ArrowDown, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, X, ArrowDown, PencilSimple, Copy, BookmarkSimple, Trash, CaretLeft, CaretRight, FunnelSimple, Scissors } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 import CatIcon from '../lib/catIcons.jsx';
 
@@ -11,7 +11,7 @@ const TIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> :
 const TI = {
   search: MagnifyingGlass, plus: Plus, x: X, arrow: ArrowDown, kebab: ThreeDots,
   edit: PencilSimple, copy: Copy, bookmark: BookmarkSimple, trash: Trash,
-  prev: CaretLeft, next: CaretRight, filter: FunnelSimple,
+  prev: CaretLeft, next: CaretRight, filter: FunnelSimple, split: Scissors,
 };
 
 const catColor = (n) => window.BAL.catColor(n);
@@ -35,7 +35,7 @@ const Avatar = ({ category, subcategory }) => {
   );
 };
 
-function RowMenu({ onEdit, onDup, onPreset, onDel, onClose }) {
+function RowMenu({ onEdit, onDup, onPreset, onSplit, onDel, onClose }) {
   const ref = useRef(null);
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -48,6 +48,7 @@ function RowMenu({ onEdit, onDup, onPreset, onDel, onClose }) {
       <button onClick={onEdit}><TIco d={TI.edit} />Edit</button>
       <button onClick={onDup}><TIco d={TI.copy} />Duplicate</button>
       {onPreset && <button onClick={onPreset}><TIco d={TI.bookmark} />Save as preset</button>}
+      {onSplit && <button onClick={onSplit}><TIco d={TI.split} />Split</button>}
       <div className="sep" />
       <button className="danger" onClick={onDel}><TIco d={TI.trash} />Delete</button>
     </div>
@@ -150,6 +151,7 @@ function Transactions() {
           onEdit={() => { openEdit(t); setMenuId(null); }}
           onDup={() => onDup(t)}
           onPreset={t.type === 'transfer' ? null : () => { setMenuId(null); window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { tab: 'preset', presetFrom: t } })); }}
+          onSplit={t.type === 'transfer' ? null : () => { setMenuId(null); window.dispatchEvent(new CustomEvent('balance:split-txn', { detail: { txn: t } })); }}
           onDel={() => onDel(t.id)}
           onClose={() => setMenuId(null)}
         />

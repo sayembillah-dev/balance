@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiObjectUrl } from '../lib/api.js';
 import {
-  X as XIcon, PencilSimple, Copy, BookmarkSimple, Trash,
+  X as XIcon, PencilSimple, Copy, BookmarkSimple, Trash, Scissors,
   ArrowUpRight, ArrowDownLeft, ArrowsLeftRight,
 } from '@phosphor-icons/react';
 
@@ -37,6 +37,11 @@ function DetailModal({ txn, onClose }) {
   const openEdit = () => {
     onClose();
     window.dispatchEvent(new CustomEvent('balance:add-txn', { detail: { txn } }));
+  };
+
+  const onSplit = () => {
+    onClose();
+    window.dispatchEvent(new CustomEvent('balance:split-txn', { detail: { txn } }));
   };
 
   const onDup = () => {
@@ -148,6 +153,9 @@ function DetailModal({ txn, onClose }) {
           <button className="btn-ghost txnd-btn" onClick={onDup}><I d={Copy} />Duplicate</button>
           {!isTransfer && (
             <button className="btn-ghost txnd-btn" onClick={onPreset}><I d={BookmarkSimple} />Preset</button>
+          )}
+          {!isTransfer && (
+            <button className="btn-ghost txnd-btn" onClick={onSplit}><I d={Scissors} />Split</button>
           )}
           {confirmDel ? (
             <div className="txnd-confirm">

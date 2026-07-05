@@ -968,11 +968,15 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .txntabs button.on { background: var(--surface); color: var(--ink); }
 .txntabs button:disabled { opacity: 0.4; cursor: default; }
 .txntabs button svg { width: 15px; height: 15px; }
-.xfer-row { display: flex; gap: 10px; align-items: flex-end; }
+.xfer-row { display: flex; gap: 10px; align-items: flex-start; }
 .xfer-row .field { flex: 1; min-width: 0; }
-.xfer-arrow { flex: 0 0 auto; height: 40px; width: 22px; display: grid; place-items: center; color: var(--ink-3); }
+.xfer-arrow { flex: 0 0 auto; height: 40px; width: 22px; display: grid; place-items: center; color: var(--ink-3); margin-top: 22px; }
 .xfer-arrow svg { width: 18px; height: 18px; }
 .form-hint { font-size: 12px; color: #c0606a; font-weight: 500; margin-top: -4px; }
+.acct-bal-hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 10px; background: var(--border-soft); border-radius: 8px; }
+.acct-bal-hint span { color: var(--ink-3); font-weight: 600; white-space: nowrap; }
+.acct-bal-hint b { font-weight: 700; color: var(--ink); }
+.acct-bal-hint b.neg { color: #c0606a; }
 .preset-ph { text-align: center; padding: 24px 12px 28px; }
 .preset-ph .pic { width: 54px; height: 54px; border-radius: 15px; background: var(--primary-soft); color: var(--primary-ink); display: grid; place-items: center; margin: 0 auto 14px; }
 .preset-ph .pic svg { width: 26px; height: 26px; }

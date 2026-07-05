@@ -19,6 +19,34 @@ const today = () => window.BAL.today();
 const firstCat = (type) => (window.BAL.categoriesByType(type)[0] || {}).name || '';
 const money = (n) => window.BAL.fmt(n);
 
+function computeBalance(acctId, accts) {
+  const acct = accts.find((a) => a.id === acctId);
+  if (!acct) return null;
+  const txns = window.BAL.loadTxns();
+  let income = 0, spent = 0, xIn = 0, xOut = 0;
+  for (const t of txns) {
+    if (t.type === 'transfer') {
+      if (t.fromAccount === acctId) xOut += t.amount;
+      else if (t.toAccount === acctId) xIn += t.amount;
+    } else if (t.account === acctId) {
+      if (t.type === 'income') income += t.amount; else spent += t.amount;
+    }
+  }
+  return acct.opening + income - spent + xIn - xOut;
+}
+
+function BalHint({ acctId, accts }) {
+  if (!acctId) return null;
+  const bal = computeBalance(acctId, accts);
+  if (bal === null) return null;
+  return (
+    <div className="acct-bal-hint">
+      <span>Available balance</span>
+      <b className={bal < 0 ? 'neg' : ''}>{money(bal)}</b>
+    </div>
+  );
+}
+
 function blankFor(tab, accts) {
   if (tab === 'transfer') return { type: 'transfer', amount: '', fromAccount: accts[0] ? accts[0].id : '', toAccount: accts[1] ? accts[1].id : (accts[0] ? accts[0].id : ''), merchant: '', date: today() };
   const type = tab === 'income' ? 'income' : 'expense';
@@ -44,6 +72,7 @@ function TxnFields({ f, set, setCat, toggleTag, accts, tags, catOpts, subOpts })
         <label>Account</label>
         <Select value={f.account} onChange={(v) => set('account', v)} ariaLabel="Account"
           options={accts.map((a) => ({ value: a.id, label: a.name }))} />
+        <BalHint acctId={f.account} accts={accts} />
       </div>
       <div className="field">
         <label>Tags</label>
@@ -229,9 +258,17 @@ function Modal({ open, onClose }) {
             <div className="modal-body">
               <div className="field"><label>Amount ({window.BAL.sym()})</label><AmountInput autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <div className="xfer-row">
-                <div className="field"><label>From</label><Select value={f.fromAccount} onChange={(v) => set('fromAccount', v)} ariaLabel="From account" options={accts.map((a) => ({ value: a.id, label: a.name }))} /></div>
+                <div className="field">
+                  <label>From</label>
+                  <Select value={f.fromAccount} onChange={(v) => set('fromAccount', v)} ariaLabel="From account" options={accts.map((a) => ({ value: a.id, label: a.name }))} />
+                  <BalHint acctId={f.fromAccount} accts={accts} />
+                </div>
                 <div className="xfer-arrow"><X d={IX.arrow} /></div>
-                <div className="field"><label>To</label><Select value={f.toAccount} onChange={(v) => set('toAccount', v)} ariaLabel="To account" options={accts.map((a) => ({ value: a.id, label: a.name }))} /></div>
+                <div className="field">
+                  <label>To</label>
+                  <Select value={f.toAccount} onChange={(v) => set('toAccount', v)} ariaLabel="To account" options={accts.map((a) => ({ value: a.id, label: a.name }))} />
+                  <BalHint acctId={f.toAccount} accts={accts} />
+                </div>
               </div>
               {f.fromAccount === f.toAccount && <div className="form-hint">Choose two different accounts.</div>}
               <div className="field"><label>Note <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(optional)</span></label><input value={f.merchant} placeholder="e.g. Move savings" onChange={(e) => set('merchant', e.target.value)} /></div>

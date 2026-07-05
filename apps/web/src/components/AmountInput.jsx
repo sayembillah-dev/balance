@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Calculator } from '@phosphor-icons/react';
+import { Calculator, X } from '@phosphor-icons/react';
 
 const OPS = ['+', '−', '×', '÷'];
 
@@ -55,11 +55,14 @@ export default function AmountInput({ value, onChange, placeholder, min, max, au
     const onResize = () => setOpen(false);
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
-    window.addEventListener('resize', onResize);
+    // Delay so the keyboard-dismiss resize on mobile doesn't close the
+    // calculator the moment it opens (keyboard hide = viewport resize).
+    const t = setTimeout(() => window.addEventListener('resize', onResize), 400);
     return () => {
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
+      clearTimeout(t);
     };
   }, [open]);
 
@@ -124,6 +127,9 @@ export default function AmountInput({ value, onChange, placeholder, min, max, au
       {open && createPortal(
         <div ref={popRef} className="calc-pop" style={{ top: pos.top, left: pos.left }}>
           <div className="calc-display">
+            <button type="button" className="calc-close" aria-label="Close calculator" onClick={() => setOpen(false)}>
+              <X weight="bold" />
+            </button>
             <span className="calc-expr">{prev !== null && op ? `${fmt(prev)} ${op}` : ' '}</span>
             <span className="calc-val">{disp}</span>
           </div>

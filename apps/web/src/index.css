@@ -1383,6 +1383,34 @@ th.sorted .th-in .arr { display: inline-flex; align-items: center; color: var(--
 .ai-send:disabled { opacity: 0.4; cursor: default; }
 .ai-send svg { width: 18px; height: 18px; }
 .ai-hint { font-size: 11px; color: var(--ink-3); text-align: center; margin-top: 9px; font-weight: 500; }
+.ai-inputwrap.ai-inputwrap-cs { opacity: 0.5; pointer-events: none; }
+.ai-intro { font-size: 12.5px; color: var(--ink-3); font-weight: 500; margin: 0; }
+.ai-answer { display: flex; flex-direction: column; gap: 14px; }
+.ai-back { background: none; border: none; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-3); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 0; align-self: flex-start; transition: color 0.12s; }
+.ai-back:hover { color: var(--primary-ink); }
+.ai-back svg { width: 13px; height: 13px; }
+.ai-ans-q { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; }
+.ai-ans-sum { background: var(--primary-soft); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
+.ai-ans-sum.warn { background: #fef2f2; }
+.ai-ans-val { font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -0.03em; line-height: 1.15; }
+.ai-ans-sum.warn .ai-ans-val { color: #b91c1c; }
+.ai-ans-lbl { font-size: 12px; font-weight: 500; color: var(--ink-3); margin-top: 2px; }
+.ai-ans-rows { border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
+.ai-ans-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border-soft); }
+.ai-ans-row:first-child { border-top: none; }
+.ai-ans-row.warn { background: #fff5f5; }
+.ai-ans-row.good { background: #f0fdf4; }
+.ai-ans-row.indent { padding-left: 26px; opacity: 0.85; }
+.ai-ans-rl { font-size: 13px; font-weight: 500; color: var(--ink-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-ans-row.warn .ai-ans-rl { color: #991b1b; font-weight: 600; }
+.ai-ans-row.good .ai-ans-rl { color: #166534; font-weight: 600; }
+.ai-ans-rr { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; }
+.ai-ans-rv { font-size: 13px; font-weight: 700; color: var(--ink); }
+.ai-ans-row.warn .ai-ans-rv { color: #991b1b; }
+.ai-ans-row.good .ai-ans-rv { color: #166534; }
+.ai-ans-rs { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+.ai-ans-err { font-size: 13px; color: #b91c1c; font-weight: 500; margin: 0; }
+.ai-ans-empty { font-size: 13.5px; color: var(--ink-2); margin: 0; font-weight: 500; line-height: 1.55; }
 
 /* ============ RESPONSIVE SHELL ============ */
 .topbar-burger { display: none; width: 42px; height: 42px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); place-items: center; cursor: pointer; flex: 0 0 auto; }

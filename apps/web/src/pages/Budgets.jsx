@@ -3,6 +3,7 @@
    (count toward category too) or Isolated tracking. */
 import React, { useState, useEffect, useRef } from 'react';
 import Select from '../components/Select.jsx';
+import AmountInput from '../components/AmountInput.jsx';
 import { Plus, X, PencilSimple, Trash, SquaresFour, Tag, Wallet, ArrowsClockwise, ClockCounterClockwise } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 
@@ -62,9 +63,7 @@ function BudgetModal({ initial, tags, cats, onSave, onClose }) {
           <div className="field-row">
             <div className="field">
               <label>Amount</label>
-              <div className="amt-field"><span className="cur">{window.BAL.sym()}</span>
-                <input type="number" min="0" value={f.amount} placeholder="5,000" onChange={(e) => set('amount', e.target.value)} />
-              </div>
+              <AmountInput cur={window.BAL.sym()} value={f.amount} placeholder="5,000" onChange={(e) => set('amount', e.target.value)} />
             </div>
             <div className="field">
               <label>Timeframe</label>

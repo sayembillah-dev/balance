@@ -3,6 +3,7 @@
    balance/income/spent and a searchable, sortable, filterable transaction list. */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Select from '../components/Select.jsx';
+import AmountInput from '../components/AmountInput.jsx';
 import { Bank, CreditCard, Wallet, Money, Buildings, PiggyBank, DeviceMobile, CurrencyBtc, Plus, ArrowLeft, X, PencilSimple, Trash, MagnifyingGlass, ArrowDown, CaretLeft, CaretRight, ArrowDownLeft, ArrowUpRight, ListBullets } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 
@@ -75,7 +76,7 @@ function AccountModal({ initial, onSave, onClose }) {
             </div>
             <div className="field">
               <label>Opening balance ({window.BAL.sym()})</label>
-              <input type="number" value={f.opening} onChange={(e) => set('opening', e.target.value)} />
+              <AmountInput value={f.opening} onChange={(e) => set('opening', e.target.value)} />
             </div>
           </div>
           <div className="field">

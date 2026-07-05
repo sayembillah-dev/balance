@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, PencilSimple, Trash, Stack, HandCoins, Sparkle, CalendarBlank, Gauge, TrendUp, Check, Warning, Target } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 import DatePicker from '../components/DatePicker.jsx';
+import AmountInput from '../components/AmountInput.jsx';
 
 const S = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const SI = {
@@ -83,7 +84,7 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
           <div className="field-row">
             <div className="field">
               <label>Target amount ({window.BAL.sym()})</label>
-              <input type="number" min="0" value={f.target} onChange={(e) => set('target', e.target.value)} />
+              <AmountInput value={f.target} onChange={(e) => set('target', e.target.value)} />
             </div>
             <div className="field">
               <label>Target date</label>
@@ -93,7 +94,7 @@ function GoalModal({ initial, unalloc, onSave, onClose }) {
           {isNew && (
             <div className="field">
               <label>Allocate now <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>(max {money(initialMax)} unassigned)</span></label>
-              <input type="number" min="0" max={initialMax} value={f.saved} onChange={(e) => set('saved', e.target.value)} />
+              <AmountInput min={0} max={initialMax} value={f.saved} onChange={(e) => set('saved', e.target.value)} />
             </div>
           )}
         </div>
@@ -118,7 +119,7 @@ function PoolModal({ pool, allocated, onSave, onClose }) {
         <div className="modal-body">
           <div className="field">
             <label>Cash in savings ({window.BAL.sym()})</label>
-            <input type="number" autoFocus min={allocated} value={v} onChange={(e) => setV(e.target.value)} />
+            <AmountInput autoFocus min={allocated} value={v} onChange={(e) => setV(e.target.value)} />
           </div>
           <div className="form-hint" style={{ color: 'var(--ink-3)' }}>Already allocated to goals: {money(allocated)}. The pool can’t be lower than this.</div>
         </div>

@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet, ArrowsClockwise } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 import DatePicker from '../components/DatePicker.jsx';
+import AmountInput from '../components/AmountInput.jsx';
 
 const PIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const PI = {
@@ -56,7 +57,7 @@ function ItemModal({ initial, kind, onSave, onClose }) {
           <div className="field-row">
             <div className="field">
               <label>Amount ({window.BAL.sym()})</label>
-              <input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} />
+              <AmountInput value={f.amount} onChange={(e) => set('amount', e.target.value)} />
             </div>
             <div className="field">
               <label>Due date{rec && <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}> (required)</span>}</label>

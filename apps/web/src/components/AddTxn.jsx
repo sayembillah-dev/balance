@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { apiUpload, apiObjectUrl } from '../lib/api.js';
 import Select from './Select.jsx';
 import DatePicker from './DatePicker.jsx';
+import AmountInput from './AmountInput.jsx';
 import { X as XIcon, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Cards, ArrowRight, Plus, PencilSimple, Trash, Play, Image as ImageIcon } from '@phosphor-icons/react';
 
 const X = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
@@ -98,7 +99,7 @@ function PresetEditor({ initial, accts, tags, onSave, onClose }) {
               <button className={`switch${hasAmt ? ' on' : ''}`} role="switch" aria-checked={hasAmt} onClick={() => setHasAmt(!hasAmt)}><i /></button>
             </div>
             {hasAmt
-              ? <input type="number" min="0" value={p.amount || ''} placeholder={`Amount (${window.BAL.sym()})`} onChange={(e) => set('amount', e.target.value)} />
+              ? <AmountInput value={p.amount || ''} placeholder={`Amount (${window.BAL.sym()})`} onChange={(e) => set('amount', e.target.value)} />
               : <div className="form-hint" style={{ color: 'var(--ink-3)', marginTop: 2 }}>You'll be asked for the amount each time you apply this preset.</div>}
           </div>
           <TxnFields f={p} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
@@ -226,7 +227,7 @@ function Modal({ open, onClose }) {
             </>
           ) : tab === 'transfer' ? (
             <div className="modal-body">
-              <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
+              <div className="field"><label>Amount ({window.BAL.sym()})</label><AmountInput autoFocus value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <div className="xfer-row">
                 <div className="field"><label>From</label><Select value={f.fromAccount} onChange={(v) => set('fromAccount', v)} ariaLabel="From account" options={accts.map((a) => ({ value: a.id, label: a.name }))} /></div>
                 <div className="xfer-arrow"><X d={IX.arrow} /></div>
@@ -239,7 +240,7 @@ function Modal({ open, onClose }) {
           ) : (
             <div className="modal-body">
               <div className="field"><label>Description</label><input autoFocus value={f.merchant} placeholder="e.g. Amazon" onChange={(e) => set('merchant', e.target.value)} /></div>
-              <div className="field"><label>Amount ({window.BAL.sym()})</label><input type="number" min="0" value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
+              <div className="field"><label>Amount ({window.BAL.sym()})</label><AmountInput value={f.amount} onChange={(e) => set('amount', e.target.value)} /></div>
               <TxnFields f={f} set={set} setCat={setCat} toggleTag={toggleTag} accts={accts} tags={tags} catOpts={catOpts} subOpts={subOpts} />
               <div className="field"><label>Date</label><DatePicker value={f.date} onChange={(v) => set('date', v)} /></div>
               <div className="field">

@@ -111,21 +111,23 @@ function Item({ it, onToggle, onEdit, onDel, menuOpen, setMenu }) {
   return (
     <div className={`pr-item${it.settled ? ' settled' : ''}`}>
       <div className="pr-av" style={{ background: tint(c), color: inkc(c) }}>{it.party.charAt(0).toUpperCase()}</div>
-      <div className="pr-mid">
-        <b>{it.party}</b>
-        <div className="sub">
-          {it.settled
-            ? <><span className="pr-badge done"><PIco d={PI.check} />{recv ? 'Received' : 'Paid'}</span><span className="when">{fmtDate(it.settledOn)}</span></>
-            : overdue
-              ? <><span className="pr-badge overdue"><PIco d={PI.clock} />Overdue</span><span className="when">{fmtDate(it.due)}</span></>
-              : <><span className="pr-badge pending"><PIco d={PI.clock} />Due</span><span className="when">{fmtDate(it.due)}</span></>}
-          {(it.recurrence || it.seriesId) && <span className="pr-badge recur" title={recurLabel(it.recurrence)}><PIco d={PI.recur} />{recurLabel(it.recurrence)}</span>}
-          {it.note && <span className="dot-sep">·</span>}
-          {it.note && <span className="note">{it.note}</span>}
+      <div className="pr-content">
+        <div className="pr-row1">
+          <div className="pr-mid">
+            <b>{it.party}</b>
+            <div className="sub">
+              {it.settled
+                ? <><span className="pr-badge done"><PIco d={PI.check} />{recv ? 'Received' : 'Paid'}</span><span className="when">{fmtDate(it.settledOn)}</span></>
+                : overdue
+                  ? <><span className="pr-badge overdue"><PIco d={PI.clock} />Overdue</span><span className="when">{fmtDate(it.due)}</span></>
+                  : <><span className="pr-badge pending"><PIco d={PI.clock} />Due</span><span className="when">{fmtDate(it.due)}</span></>}
+              {(it.recurrence || it.seriesId) && <span className="pr-badge recur" title={recurLabel(it.recurrence)}><PIco d={PI.recur} />{recurLabel(it.recurrence)}</span>}
+              {it.note && <span className="dot-sep">·</span>}
+              {it.note && <span className="note">{it.note}</span>}
+            </div>
+          </div>
+          <div className={`pr-amt ${recv ? 'recv' : 'pay'}`}>{window.BAL.fmt(it.amount)}</div>
         </div>
-      </div>
-      <div className="pr-right">
-        <div className={`pr-amt ${recv ? 'recv' : 'pay'}`}>{window.BAL.fmt(it.amount)}</div>
         <div className="pr-actions">
           {it.settled
             ? <button className="btn-sm ghost" onClick={() => onToggle(it.id)}><PIco d={PI.undo} />Unmark</button>

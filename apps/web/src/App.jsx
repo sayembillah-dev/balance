@@ -153,7 +153,7 @@ export default function App() {
 
   return (
     <>
-      <div className={cls}>
+      <div className={cls} data-page={active}>
         {/* ===== SIDEBAR ===== */}
         <aside className="sidebar">
           <div className="brand">

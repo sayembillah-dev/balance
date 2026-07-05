@@ -144,13 +144,11 @@ function DetailModal({ txn, onClose }) {
 
         {/* Actions */}
         <div className="txnd-foot">
-          <div className="txnd-foot-left">
-            <button className="btn-ghost txnd-btn" onClick={openEdit}><I d={PencilSimple} />Edit</button>
-            <button className="btn-ghost txnd-btn" onClick={onDup}><I d={Copy} />Duplicate</button>
-            {!isTransfer && (
-              <button className="btn-ghost txnd-btn" onClick={onPreset}><I d={BookmarkSimple} />Preset</button>
-            )}
-          </div>
+          <button className="btn-ghost txnd-btn" onClick={openEdit}><I d={PencilSimple} />Edit</button>
+          <button className="btn-ghost txnd-btn" onClick={onDup}><I d={Copy} />Duplicate</button>
+          {!isTransfer && (
+            <button className="btn-ghost txnd-btn" onClick={onPreset}><I d={BookmarkSimple} />Preset</button>
+          )}
           {confirmDel ? (
             <div className="txnd-confirm">
               <span>Delete?</span>

@@ -44,7 +44,9 @@ export default function Select({
     const r = el.getBoundingClientRect();
     const below = window.innerHeight - r.bottom;
     const dropUp = below < Math.min(MENU_MAX_H, options.length * 38 + 12) && r.top > below;
-    setCoords({ top: dropUp ? r.top : r.bottom, left: r.left, width: r.width, dropUp });
+    const menuMinW = Math.max(r.width, 180);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - menuMinW - 8));
+    setCoords({ top: dropUp ? r.top : r.bottom, left, width: r.width, dropUp });
   };
 
   useEffect(() => {

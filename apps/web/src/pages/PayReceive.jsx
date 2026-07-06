@@ -1,8 +1,9 @@
 /* Balance — Pay & Receive.
    Two tabs: Receivables (money owed to you) and Payables (money you owe).
-   Create / edit / delete, mark settled / unmark, totals. */
+   Create / edit / delete, mark settled / unmark, totals.
+   Settled items auto-archive; archive panel accessible via the Archive button. */
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet, ArrowsClockwise } from '@phosphor-icons/react';
+import { Plus, X, PencilSimple, Trash, Check, ArrowCounterClockwise, ArrowDownLeft, ArrowUpRight, Clock, Wallet, ArrowsClockwise, Archive } from '@phosphor-icons/react';
 import ThreeDots from '../components/ThreeDots.jsx';
 import DatePicker from '../components/DatePicker.jsx';
 import AmountInput from '../components/AmountInput.jsx';
@@ -10,14 +11,14 @@ import AmountInput from '../components/AmountInput.jsx';
 const PIco = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
 const PI = {
   plus: Plus, x: X, kebab: ThreeDots, edit: PencilSimple, trash: Trash, check: Check,
-  undo: ArrowCounterClockwise, in: ArrowDownLeft, out: ArrowUpRight, clock: Clock, wallet: Wallet, recur: ArrowsClockwise,
+  undo: ArrowCounterClockwise, in: ArrowDownLeft, out: ArrowUpRight, clock: Clock,
+  wallet: Wallet, recur: ArrowsClockwise, archive: Archive,
 };
 const RECUR_OPTS = [{ value: '', label: 'One-off' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }];
 const recurLabel = (r) => (r === 'weekly' ? 'Repeats weekly' : r === 'monthly' ? 'Repeats monthly' : 'Recurring');
 const STORE = 'balance.payrecv.v1';
 const fmtDate = (iso) => window.BAL.fmtDate(iso);
 const grp = (n) => Math.abs(n).toLocaleString('en-IN');
-const TODAY = '2025-06-30';
 const RECV_C = '#15803d', PAY_C = '#c0606a';
 
 const SEED = [
@@ -38,7 +39,6 @@ function ItemModal({ initial, kind, onSave, onClose }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const rec = f.recurrence || '';
   const noun = kind === 'receivable' ? 'receivable' : 'payable';
-  // A recurring item needs a due date to anchor the schedule.
   const valid = f.party.trim() && f.amount && !(rec && !f.due);
   const [saving, setSaving] = useState(false);
   const save = () => { if (!valid) return; setSaving(true); onSave({ ...f, party: f.party.trim(), amount: Math.abs(Number(f.amount)) }); };
@@ -108,20 +108,18 @@ function RowMenu({ onEdit, onDel, onClose }) {
 function Item({ it, onToggle, onEdit, onDel, menuOpen, setMenu }) {
   const recv = it.kind === 'receivable';
   const c = recv ? RECV_C : PAY_C;
-  const overdue = !it.settled && it.due && it.due < TODAY;
+  const overdue = !it.settled && it.due && it.due < window.BAL.today();
   return (
-    <div className={`pr-item${it.settled ? ' settled' : ''}`}>
+    <div className="pr-item">
       <div className="pr-av" style={{ background: tint(c), color: inkc(c) }}>{it.party.charAt(0).toUpperCase()}</div>
       <div className="pr-content">
         <div className="pr-row1">
           <div className="pr-mid">
             <b>{it.party}</b>
             <div className="sub">
-              {it.settled
-                ? <><span className="pr-badge done"><PIco d={PI.check} />{recv ? 'Received' : 'Paid'}</span><span className="when">{fmtDate(it.settledOn)}</span></>
-                : overdue
-                  ? <><span className="pr-badge overdue"><PIco d={PI.clock} />Overdue</span><span className="when">{fmtDate(it.due)}</span></>
-                  : <><span className="pr-badge pending"><PIco d={PI.clock} />Due</span><span className="when">{fmtDate(it.due)}</span></>}
+              {overdue
+                ? <><span className="pr-badge overdue"><PIco d={PI.clock} />Overdue</span><span className="when">{fmtDate(it.due)}</span></>
+                : <><span className="pr-badge pending"><PIco d={PI.clock} />Due</span><span className="when">{fmtDate(it.due)}</span></>}
               {(it.recurrence || it.seriesId) && <span className="pr-badge recur" title={recurLabel(it.recurrence)}><PIco d={PI.recur} />{recurLabel(it.recurrence)}</span>}
               {it.note && <span className="dot-sep">·</span>}
               {it.note && <span className="note">{it.note}</span>}
@@ -130,14 +128,60 @@ function Item({ it, onToggle, onEdit, onDel, menuOpen, setMenu }) {
           <div className={`pr-amt ${recv ? 'recv' : 'pay'}`}>{window.BAL.fmt(it.amount)}</div>
         </div>
         <div className="pr-actions">
-          {it.settled
-            ? <button className="btn-sm ghost" onClick={() => onToggle(it.id)}><PIco d={PI.undo} />Unmark</button>
-            : <button className="btn-sm solid" onClick={() => onToggle(it.id)}><PIco d={PI.check} />{recv ? 'Mark received' : 'Mark paid'}</button>}
+          <button className="btn-sm solid" onClick={() => onToggle(it.id)}><PIco d={PI.check} />{recv ? 'Mark received' : 'Mark paid'}</button>
           <div style={{ position: 'relative' }}>
             <button className={`kebab${menuOpen ? ' open' : ''}`} aria-label="Actions" onClick={() => setMenu(menuOpen ? null : it.id)}><PIco d={PI.kebab} fill /></button>
             {menuOpen && <RowMenu onEdit={() => { onEdit(it); setMenu(null); }} onDel={() => onDel(it.id)} onClose={() => setMenu(null)} />}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ArchivePanel({ items, kind, onUnmark, onClose }) {
+  const recv = kind === 'receivable';
+  const c = recv ? RECV_C : PAY_C;
+  return (
+    <div className="lib-overlay" onMouseDown={onClose}>
+      <div className="archive-panel" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="lib-head">
+          <div>
+            <h3>Archive</h3>
+            <p>{items.length} {recv ? 'received' : 'paid'} {items.length === 1 ? 'item' : 'items'}</p>
+          </div>
+          <button className="lib-x" onClick={onClose} aria-label="Close"><PIco d={PI.x} /></button>
+        </div>
+        {items.length === 0 ? (
+          <div className="pr-empty" style={{ margin: '16px 18px', borderRadius: 12 }}>
+            <b>No archived items</b>
+            <span>Settled {recv ? 'receivables' : 'payables'} will appear here automatically.</span>
+          </div>
+        ) : (
+          <div className="archive-list">
+            {items.map((it) => (
+              <div key={it.id} className="pr-item settled">
+                <div className="pr-av" style={{ background: tint(c), color: inkc(c) }}>{it.party.charAt(0).toUpperCase()}</div>
+                <div className="pr-content">
+                  <div className="pr-row1">
+                    <div className="pr-mid">
+                      <b>{it.party}</b>
+                      <div className="sub">
+                        <span className="pr-badge done"><PIco d={PI.check} />{recv ? 'Received' : 'Paid'}</span>
+                        <span className="when">{fmtDate(it.settledOn)}</span>
+                        {it.note && <><span className="dot-sep">·</span><span className="note">{it.note}</span></>}
+                      </div>
+                    </div>
+                    <div className="pr-amt">{window.BAL.fmt(it.amount)}</div>
+                  </div>
+                  <div className="pr-actions">
+                    <button className="btn-sm ghost" onClick={() => onUnmark(it.id)}><PIco d={PI.undo} />Unmark</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -152,6 +196,7 @@ export default function PayReceive() {
   const [kind, setKind] = useState('receivable');
   const [editing, setEditing] = useState(null);
   const [menu, setMenu] = useState(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   useEffect(() => { window.BAL.savePayRecv(items); }, [items]);
 
@@ -160,18 +205,18 @@ export default function PayReceive() {
     setEditing(null);
   };
   const del = (id) => { setItems((all) => all.filter((x) => x.id !== id)); setMenu(null); };
-  const toggle = (id) => setItems((all) => all.map((x) => x.id === id ? { ...x, settled: !x.settled, settledOn: !x.settled ? TODAY : null } : x));
+  const toggle = (id) => setItems((all) => all.map((x) => x.id === id ? { ...x, settled: !x.settled, settledOn: !x.settled ? window.BAL.today() : null } : x));
 
   const list = items.filter((x) => x.kind === kind);
-  const pending = list.filter((x) => !x.settled);
-  const settled = list.filter((x) => x.settled);
-  const outstanding = pending.reduce((s, x) => s + x.amount, 0);
-  const settledSum = settled.reduce((s, x) => s + x.amount, 0);
-  const overdue = pending.filter((x) => x.due && x.due < TODAY).length;
-  const sorted = [...list].sort((a, b) => (a.settled - b.settled) || (a.due || '').localeCompare(b.due || ''));
+  const active = list.filter((x) => !x.settled);
+  const archived = list.filter((x) => x.settled);
+  const outstanding = active.reduce((s, x) => s + x.amount, 0);
+  const settledSum = archived.reduce((s, x) => s + x.amount, 0);
+  const overdue = active.filter((x) => x.due && x.due < window.BAL.today()).length;
+  const sorted = [...active].sort((a, b) => (a.due || '').localeCompare(b.due || ''));
 
   const recv = kind === 'receivable';
-  const blank = { kind, party: '', amount: '', due: TODAY, note: '', settled: false, recurrence: '' };
+  const blank = { kind, party: '', amount: '', due: window.BAL.today(), note: '', settled: false, recurrence: '' };
 
   return (
     <div className="pr">
@@ -180,9 +225,16 @@ export default function PayReceive() {
         <button className="btn-primary" onClick={() => setEditing(blank)}><PIco d={PI.plus} />New {recv ? 'receivable' : 'payable'}</button>
       </div>
 
-      <div className="cat-tabs">
-        <button className={recv ? 'on' : ''} onClick={() => setKind('receivable')}><span className="dot" style={{ background: RECV_C }} />Receivables</button>
-        <button className={!recv ? 'on' : ''} onClick={() => setKind('payable')}><span className="dot" style={{ background: PAY_C }} />Payables</button>
+      <div className="pr-tab-bar">
+        <div className="cat-tabs">
+          <button className={recv ? 'on' : ''} onClick={() => setKind('receivable')}><span className="dot" style={{ background: RECV_C }} />Receivables</button>
+          <button className={!recv ? 'on' : ''} onClick={() => setKind('payable')}><span className="dot" style={{ background: PAY_C }} />Payables</button>
+        </div>
+        <button className="pr-archive-btn" onClick={() => setArchiveOpen(true)} title="View archived items">
+          <PIco d={PI.archive} />
+          Archive
+          {archived.length > 0 && <span className="pr-archive-count">{archived.length}</span>}
+        </button>
       </div>
 
       <div className="acct-sum">
@@ -192,7 +244,7 @@ export default function PayReceive() {
       </div>
 
       {sorted.length === 0 ? (
-        <div className="pr-empty"><b>Nothing here yet</b><span>Add a {recv ? 'receivable' : 'payable'} to start tracking it.</span></div>
+        <div className="pr-empty"><b>Nothing pending</b><span>{archived.length > 0 ? `All ${recv ? 'receivables' : 'payables'} are settled — check the archive.` : `Add a ${recv ? 'receivable' : 'payable'} to start tracking it.`}</span></div>
       ) : (
         <div className="pr-list">
           {sorted.map((it) => (
@@ -201,6 +253,7 @@ export default function PayReceive() {
         </div>
       )}
 
+      {archiveOpen && <ArchivePanel items={archived} kind={kind} onUnmark={toggle} onClose={() => setArchiveOpen(false)} />}
       {editing && <ItemModal key={editing.id || 'new'} initial={editing} kind={editing.kind} onSave={save} onClose={() => setEditing(null)} />}
     </div>
   );

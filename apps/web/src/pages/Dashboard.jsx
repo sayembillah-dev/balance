@@ -416,7 +416,79 @@ function computeDashboard() {
     return { label: b.name, spent: inr(spent), cap: inr(b.amount), pct };
   });
 
-  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0, cashflowNet, cashflowDelta, incomeVsExpense, accountBalances, allGoals, heatmap };
+  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0, cashflowNet, cashflowDelta, incomeVsExpense, accountBalances, allGoals, heatmap, txns };
+}
+
+const CAT_PERIODS = [
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: '6m', label: '6 Months' },
+  { key: 'year', label: 'This Year' },
+];
+
+function catPeriodStart(key) {
+  const now = new Date();
+  if (key === 'week') {
+    const d = new Date(now);
+    const day = d.getDay();
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  if (key === 'month') {
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  }
+  if (key === '6m') {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  }
+  return `${now.getFullYear()}-01-01`;
+}
+
+function CategoryWidget({ txns }) {
+  const [period, setPeriod] = useState('month');
+  const start = catPeriodStart(period);
+  const catSpend = {};
+  for (const t of txns) {
+    if (t.type !== 'expense') continue;
+    if ((t.date || '').slice(0, 10) < start) continue;
+    const c = t.category || 'Uncategorized';
+    catSpend[c] = (catSpend[c] || 0) + t.amount;
+  }
+  const total = Object.values(catSpend).reduce((s, v) => s + v, 0);
+  const segs = Object.entries(catSpend).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    .map(([label, v]) => ({ label, v: Math.round(v) }));
+  let acc = 0;
+  const stops = segs.map((s, i) => {
+    const s0 = (acc / (total || 1)) * 360; acc += s.v;
+    return `${CAT[i % CAT.length]} ${s0}deg ${(acc / (total || 1)) * 360}deg`;
+  }).join(', ');
+
+  return (
+    <div className="wg-body">
+      <div className="cat-period-row">
+        <select className="cat-period-sel" value={period} onChange={(e) => setPeriod(e.target.value)}>
+          {CAT_PERIODS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+        </select>
+      </div>
+      {segs.length ? (
+        <div className="donut-wrap">
+          <div className="donut" style={{ background: `conic-gradient(${stops})` }}>
+            <div className="donut-c"><b>{inr(total)}</b><span>spent</span></div>
+          </div>
+          <div className="legend">
+            {segs.map((s, i) => (
+              <div className="legend-row" key={s.label}>
+                <i style={{ background: CAT[i % CAT.length] }} />
+                <span>{s.label}</span><b>{inr(s.v)}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ opacity: 0.55, fontSize: 14, padding: '10px 2px' }}>No spending in this period.</div>
+      )}
+    </div>
+  );
 }
 
 const CATALOG = {
@@ -428,7 +500,7 @@ const CATALOG = {
   budget:       { title: 'Budget Progress', icon: 'bars', w: 2, h: 1, desc: 'Spending vs caps', render: (d) => d.budgetRows.length ? <ProgressList rows={d.budgetRows} /> : <Empty msg="No budgets yet — add some on the Budgets page." /> },
   goal:         { title: 'Savings Goal', icon: 'target', w: 1, h: 2, desc: 'Progress toward a goal', render: (d) => d.goal ? <GoalRing pct={d.goal.pct} title={d.goal.title} sub={d.goal.sub} /> : <Empty msg="No goals yet — add one in Saving & Goals." /> },
   bills:        { title: 'Upcoming Bills', icon: 'bill', w: 1, h: 2, desc: 'Subscriptions & dues', render: (d) => d.bills.length ? <WList rows={d.bills} /> : <Empty msg="No upcoming dues." /> },
-  category:     { title: 'Spending by Category', icon: 'pie', w: 2, h: 2, desc: 'Where your money goes', render: (d) => d.categorySegs.length ? <Donut segs={d.categorySegs} /> : <Empty msg="No spending yet." /> },
+  category:     { title: 'Spending by Category', icon: 'pie', w: 2, h: 2, desc: 'Where your money goes', render: (d) => <CategoryWidget txns={d.txns} /> },
   trend:        { title: 'Monthly Trend', icon: 'bars', w: 2, h: 2, desc: 'Expenses over 8 months', render: (d) => <BarChart hot={7} data={d.trend} /> },
   transactions: { title: 'Recent Transactions', icon: 'list', w: 2, h: 2, desc: 'Latest activity', render: (d) => d.recent.length ? <WList rows={d.recent} /> : <Empty msg="No transactions yet." /> },
   cashflow:     { title: 'Net Cash Flow', icon: 'trend', w: 1, h: 1, desc: 'Monthly surplus or deficit', render: (d) => <Stat value={inr(d.cashflowNet)} delta={d.cashflowDelta} good={d.cashflowNet >= 0} sub={d.cashflowNet >= 0 ? 'surplus this month' : 'deficit this month'} /> },

@@ -124,6 +124,8 @@ export const settingsUpdateSchema = z.object({
   biometric: z.boolean().optional(),
   weeklyEmail: z.boolean().optional(),
   onboarded: z.boolean().optional(),
+  lazyMode: z.boolean().optional(),
+  lazyModeAccountId: uuid.nullish(),
 });
 
 export const profileUpdateSchema = z.object({

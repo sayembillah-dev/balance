@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { timestamps } from '../columns.js';
 import { budgetModeEnum } from '../enums.js';
 import { users } from './users.js';
+import { accounts } from './finance.js';
 
 /**
  * Per-user behavioural preferences (singleton row keyed by userId). Profile
@@ -24,6 +25,11 @@ export const settings = pgTable('settings', {
   weeklyEmail: boolean('weekly_email').notNull().default(false),
   // Whether the user has completed (or skipped) the first-run onboarding flow.
   onboarded: boolean('onboarded').notNull().default(false),
+  // Lazy mode: a stripped-down dashboard (this month's income/expense only) with
+  // two floating +/- buttons for one-screen category + amount entry. Every entry
+  // it creates uses lazyModeAccountId, so that account must be chosen up front.
+  lazyMode: boolean('lazy_mode').notNull().default(false),
+  lazyModeAccountId: uuid('lazy_mode_account_id').references(() => accounts.id, { onDelete: 'set null' }),
   ...timestamps,
 });
 

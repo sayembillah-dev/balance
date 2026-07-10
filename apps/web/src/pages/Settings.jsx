@@ -44,6 +44,8 @@ const DEFAULTS = {
   currency: 'INR', monthStart: '1', rollover: true, tagBehavior: 'parallel', privacy: false,
   twoFactor: true, loginAlerts: true, biometric: false,
   sync: true, googleDrive: false, weeklyEmail: true,
+  // Lazy mode
+  lazyMode: false, lazyModeAccountId: null,
   // AI settings
   aiEnabled: false, aiActiveModelId: null,
 };
@@ -216,7 +218,7 @@ const TABS = [
   { id: 'ai', icon: GI.brain, label: 'AI Assistant' },
 ];
 
-const Switch = ({ on, onClick }) => <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={!!on} onClick={onClick}><i /></button>;
+const Switch = ({ on, onClick, disabled }) => <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={!!on} onClick={onClick} disabled={disabled}><i /></button>;
 const Row = ({ title, sub, children, block, danger }) => (
   <div className={`set-row${block ? ' block' : ''}${danger ? ' danger' : ''}`}>
     <div className="rl"><b>{title}</b>{sub && <span className="rl-sub">{sub}</span>}</div>
@@ -249,7 +251,12 @@ function ProfilePanel({ d, set, avatarUrl, fileRef, onPickPhoto }) {
   );
 }
 
-function PrefsPanel({ d, set }) {
+function PrefsPanel({ d, set, accts }) {
+  const hasAccounts = accts.length > 0;
+  const setLazyMode = (on) => {
+    set('lazyMode', on);
+    if (on && !d.lazyModeAccountId && accts[0]) set('lazyModeAccountId', accts[0].id);
+  };
   return (
     <>
       <div className="set-group-t">Currency &amp; Localization</div>
@@ -288,6 +295,19 @@ function PrefsPanel({ d, set }) {
         <Row title="Mask dashboard balances" sub="Conceal monetary values on the main dashboard with dots (••••) for secure viewing in public.">
           <Switch on={d.privacy} onClick={() => set('privacy', !d.privacy)} />
         </Row>
+      </div>
+
+      <div className="set-group-t">Quick Entry</div>
+      <div className="set-group">
+        <Row title="Lazy mode" sub={hasAccounts ? 'Swap the dashboard for two floating buttons — pick a category, enter an amount, done.' : 'Add at least one account first to turn this on.'}>
+          <Switch on={d.lazyMode} disabled={!hasAccounts} onClick={() => setLazyMode(!d.lazyMode)} />
+        </Row>
+        {d.lazyMode && (
+          <Row title="Default account" sub="Every lazy-mode entry is posted to this account.">
+            <Select value={d.lazyModeAccountId || ''} onChange={(v) => set('lazyModeAccountId', v)} ariaLabel="Lazy mode default account"
+              options={accts.map((a) => ({ value: a.id, label: a.name }))} />
+          </Row>
+        )}
       </div>
     </>
   );
@@ -798,6 +818,7 @@ export default function Settings() {
 
   const cur = TABS.find((t) => t.id === tab);
   const Panel = { profile: ProfilePanel, prefs: PrefsPanel, security: SecurityPanel, data: DataPanel }[tab];
+  const accts = window.BAL.loadAccounts();
 
   return (
     <div>
@@ -818,7 +839,7 @@ export default function Settings() {
           }</div></div>
           {tab === 'ai'
             ? <AiPanel />
-            : <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} />}
+            : <Panel d={d} set={set} a={actions} avatarUrl={avatarUrl} fileRef={fileRef} onPickPhoto={onPickPhoto} accts={accts} />}
           <div className="set-foot">
             {justSaved && <span className="saved-note"><G d={GI.check} />All changes saved</span>}
             <button className="btn-ghost" onClick={cancel} disabled={!dirty} style={dirty ? null : { opacity: 0.5, cursor: 'default' }}>Cancel</button>

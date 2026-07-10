@@ -407,6 +407,7 @@ function saveSettings(d) {
     currency: d.currency, monthStart: d.monthStart, rollover: d.rollover,
     tagBehavior: d.tagBehavior, privacyMask: !!d.privacy, twoFactor: !!d.twoFactor,
     loginAlerts: !!d.loginAlerts, biometric: !!d.biometric, weeklyEmail: !!d.weeklyEmail,
+    lazyMode: !!d.lazyMode, lazyModeAccountId: d.lazyModeAccountId || null,
   }).catch((e) => console.error('[bal] settings save failed', e));
 }
 
@@ -502,6 +503,7 @@ async function hydrate() {
     privacy: prefs.privacyMask ?? false, twoFactor: prefs.twoFactor ?? false,
     loginAlerts: prefs.loginAlerts ?? true, biometric: prefs.biometric ?? false,
     weeklyEmail: prefs.weeklyEmail ?? false, onboarded: prefs.onboarded ?? false,
+    lazyMode: prefs.lazyMode ?? false, lazyModeAccountId: prefs.lazyModeAccountId ?? null,
   };
   emitChanged();
 }

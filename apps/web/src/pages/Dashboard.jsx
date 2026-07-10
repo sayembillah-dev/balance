@@ -8,6 +8,7 @@ import {
   ArrowRight, PaperPlaneTilt, HandCoins, ArrowDownLeft, ArrowUpRight, ArrowsLeftRight, Note,
   CalendarBlank,
 } from '@phosphor-icons/react';
+import LazyQuickAdd from '../components/LazyQuickAdd.jsx';
 
 // ---------- tiny icon helper ----------
 const Ico = ({ d: C, fill }) => (C ? <C weight={fill ? 'fill' : 'regular'} /> : null);
@@ -416,7 +417,7 @@ function computeDashboard() {
     return { label: b.name, spent: inr(spent), cap: inr(b.amount), pct };
   });
 
-  return { balanceTotal, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0, cashflowNet, cashflowDelta, incomeVsExpense, accountBalances, allGoals, heatmap, txns };
+  return { balanceTotal, monthIncome, monthExpense, savingsRate, categorySegs, trend, netPts, recent, goal, bills, budgetRows, pool: savings.pool || 0, cashflowNet, cashflowDelta, incomeVsExpense, accountBalances, allGoals, heatmap, txns };
 }
 
 const CAT_PERIODS = [
@@ -566,6 +567,29 @@ function Library({ active, onToggle, onClose }) {
   );
 }
 
+function LazyBasicDashboard({ d }) {
+  const settings = window.BAL.loadSettings();
+  return (
+    <div className="lazy-dash">
+      <div className="lazy-stats">
+        <div className="wg lazy-stat">
+          <div className="wg-body">
+            <div className="st-sub">Income · this month</div>
+            <div className="st-val lazy-inc">{inr(d.monthIncome)}</div>
+          </div>
+        </div>
+        <div className="wg lazy-stat">
+          <div className="wg-body">
+            <div className="st-sub">Expenses · this month</div>
+            <div className="st-val">{inr(d.monthExpense)}</div>
+          </div>
+        </div>
+      </div>
+      <LazyQuickAdd defaultAccountId={settings.lazyModeAccountId || null} />
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [widgets, setWidgets] = useState(() => {
     // A new account is seeded with DEFAULT_WIDGETS server-side, so a stored array
@@ -663,6 +687,19 @@ export default function Dashboard() {
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
   }, []);
+
+  const lazy = !!window.BAL.loadSettings().lazyMode;
+
+  if (lazy) {
+    return (
+      <div className="dash">
+        <div className="dash-head">
+          <div><h2>Overview</h2><p>Lazy mode is on — quick add from the buttons below.</p></div>
+        </div>
+        <LazyBasicDashboard d={data} />
+      </div>
+    );
+  }
 
   return (
     <div className="dash">
